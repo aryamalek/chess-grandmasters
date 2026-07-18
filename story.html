@@ -16,7 +16,7 @@
   #storyStage { position: relative; }
 
   #stickyStage {
-    position: sticky; top: 0; height: 100vh;
+    position: sticky; top: 0; height: 100vh; /* JS overrides this per-breakpoint on load */
     background: #0a0c12; overflow: hidden;
     display: flex; flex-direction: column;
   }
@@ -40,7 +40,7 @@
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
 
-  #steps { position: relative; margin-top: -100vh; pointer-events: none; }
+  #steps { position: relative; margin-top: -100vh; pointer-events: none; } /* JS keeps this synced to #stickyStage's actual height */
   .step { height: 100vh; }
   .tail-spacer { height: 30vh; }
 
@@ -90,10 +90,24 @@
 
 <script>
 (function() {
+  const stickyStage = document.getElementById('stickyStage');
+  const steps = document.getElementById('steps');
   const stage = document.getElementById('stage');
   const capEyebrow = document.getElementById('capEyebrow');
   const capBody = document.getElementById('capBody');
   const stepEls = Array.from(document.querySelectorAll('.step'));
+
+  const MOBILE_BREAKPOINT = 640;
+
+  // full viewport width and height on wide screens; only clamp to a 9:16 portrait
+  // box once the viewport itself is narrow enough that full-height would look wrong.
+  function layoutStage() {
+    const w = window.innerWidth;
+    const h = w <= MOBILE_BREAKPOINT ? Math.min(window.innerHeight, w * 16 / 9) : window.innerHeight;
+    stickyStage.style.height = h + 'px';
+    steps.style.marginTop = (-h) + 'px';
+  }
+  layoutStage();
 
   const BASE = 100;
   const EASE = 'cubic-bezier(.16,1,.3,1)';
@@ -290,7 +304,7 @@
     }
 
     function onScroll() {
-      const stageRect = document.getElementById('stickyStage').getBoundingClientRect();
+      const stageRect = stickyStage.getBoundingClientRect();
       const centerY = stageRect.top + stageRect.height * 0.55;
       let idx = 0;
       for (let i = 0; i < stepEls.length; i++) {
@@ -303,7 +317,10 @@
     window.addEventListener('scroll', onScroll, { passive: true });
     setActive(0);
     onScroll();
-    window.addEventListener('resize', () => render(+stepEls[activeStep].dataset.count));
+    window.addEventListener('resize', () => {
+      layoutStage();
+      render(+stepEls[activeStep].dataset.count);
+    });
   }
 })();
 </script>
