@@ -20,22 +20,22 @@
   #stage { position: relative; flex: 1 1 auto; min-height: 0; perspective: 700px; }
 
   /* fluid sizing: scales continuously with viewport width (like the circle grid does
-     in JS) instead of snapping at a single breakpoint. Each clamp() is anchored to the
-     same two reference points the old breakpoint used — ~390px (phone) and ~1000px+
-     (desktop) — so the range is unchanged, just no longer a jump. */
+     in JS) instead of snapping at a single breakpoint. Anchored between ~390px (phone)
+     and ~2000px (wide desktop) — no line-length cap, so text uses the dock's full width
+     and grows to match it, rather than sitting as a narrow column on a wide screen. */
   #captionDock {
-    flex: 0 0 auto; height: clamp(148px, 3vw + 136px, 160px);
-    box-sizing: border-box; padding: clamp(18px, 0.7vw + 15.3px, 20px) clamp(22px, 3vw + 10px, 40px) clamp(26px, 0.7vw + 23.3px, 28px);
+    flex: 0 0 auto; height: clamp(148px, 4.5vw + 130px, 220px);
+    box-sizing: border-box; padding: clamp(18px, 0.5vw + 16px, 26px) clamp(22px, 2.6vw + 12px, 64px) clamp(26px, 0.5vw + 24px, 34px);
     display: flex; flex-direction: column; justify-content: flex-end;
     background: #0a0c12; border-top: 1px solid rgba(255,255,255,0.06);
   }
   #capEyebrow {
-    font-size: clamp(10px, 0.8vw + 7px, 11px); letter-spacing: 0.08em; text-transform: uppercase; color: #d4af6a;
-    margin-bottom: clamp(7px, 0.5vw + 5.5px, 8px); transition: opacity 260ms ease;
+    font-size: clamp(10px, 0.43vw + 8.3px, 17px); letter-spacing: 0.08em; text-transform: uppercase; color: #d4af6a;
+    margin-bottom: clamp(7px, 0.5vw + 5.5px, 10px); transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
   #capBody {
-    font-size: clamp(15px, 1vw + 11px, 18px); line-height: 1.5; color: rgba(255,255,255,0.92); max-width: min(560px, 90vw);
+    font-size: clamp(15px, 0.81vw + 11.85px, 28px); line-height: 1.5; color: rgba(255,255,255,0.92);
     transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
