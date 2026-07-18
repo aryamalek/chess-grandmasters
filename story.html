@@ -165,7 +165,7 @@
   });
 
   function init(GM) {
-    const grid = makeStableGrid();
+    let grid = makeStableGrid();
     const els = [];
     let highlight = '';
 
@@ -307,6 +307,11 @@
     onScroll();
     window.addEventListener('resize', () => {
       layoutStage();
+      // the stable grid's column/row shape is chosen once and then kept fixed on purpose
+      // (that's what keeps scroll-driven growth reflow-free) — but that means it's still
+      // holding whatever shape fit the *old* container. A resize changes the container's
+      // own aspect ratio, so pick a fresh shape for it rather than squeezing the old one in.
+      grid = makeStableGrid();
       render(+stepEls[activeStep].dataset.count);
     });
   }
