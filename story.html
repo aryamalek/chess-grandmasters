@@ -85,13 +85,13 @@
   const capBody = document.getElementById('capBody');
   const stepEls = Array.from(document.querySelectorAll('.step'));
 
-  const MOBILE_BREAKPOINT = 640;
-
-  // full viewport width and height on wide screens; only clamp to a 9:16 portrait
-  // box once the viewport itself is narrow enough that full-height would look wrong.
+  // always full viewport width and height — real phones are already portrait-shaped,
+  // so forcing an exact 9:16 box (rather than the device's actual, usually taller,
+  // proportions) just left a gap between the box and the real edge of the screen.
+  // The grid's own aspect-fitting (below) picks an appropriately portrait layout
+  // for whatever box it's actually given, no artificial ratio needed.
   function layoutStage() {
-    const w = window.innerWidth;
-    const h = w <= MOBILE_BREAKPOINT ? Math.min(window.innerHeight, w * 16 / 9) : window.innerHeight;
+    const h = window.innerHeight;
     stickyStage.style.height = h + 'px';
     steps.style.marginTop = (-h) + 'px';
   }
