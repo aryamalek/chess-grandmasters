@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Grandmasters — a scrollable history</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0a0c12; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+
+  .intro { max-width: 640px; margin: 0 auto; padding: 64px 24px 32px; }
+  .intro h1 { font-size: 32px; line-height: 1.2; margin: 0 0 12px; text-wrap: balance; }
+  .intro p { font-size: 16px; line-height: 1.6; color: rgba(255,255,255,0.72); margin: 0; }
+
+  #storyStage { position: relative; }
+
+  #stickyStage {
+    position: sticky; top: 0; height: 100vh;
+    background: #0a0c12; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+
+  #stage { position: relative; flex: 1 1 auto; min-height: 0; perspective: 700px; }
+
+  #captionDock {
+    flex: 0 0 auto; height: 160px;
+    box-sizing: border-box; padding: 20px 40px 28px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    background: #0a0c12; border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  #capEyebrow {
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #d4af6a;
+    margin-bottom: 8px; transition: opacity 260ms ease;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  #capBody {
+    font-size: 18px; line-height: 1.55; color: rgba(255,255,255,0.92); max-width: 560px;
+    transition: opacity 260ms ease;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+
+  #steps { position: relative; margin-top: -100vh; pointer-events: none; }
+  .step { height: 100vh; }
+  .tail-spacer { height: 30vh; }
+
+  .credit { max-width: 640px; margin: 0 auto; padding: 40px 24px 80px; font-size: 13px; color: rgba(255,255,255,0.45); }
+  .credit a { color: rgba(255,255,255,0.65); }
+
+  @media (max-width: 640px) {
+    .intro { padding: 40px 20px 24px; }
+    .intro h1 { font-size: 26px; }
+    .intro p { font-size: 15px; }
+    #captionDock { height: 148px; padding: 18px 22px 26px; }
+    #capEyebrow { font-size: 10px; margin-bottom: 7px; }
+    #capBody { font-size: 15px; line-height: 1.5; max-width: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>The Grandmasters</h1>
+  <p>In 1950, FIDE created the Grandmaster title and handed it to 27 living players at once. Every one since has earned it. Scroll to watch the world's chess elite take shape, one title at a time.</p>
+</div>
+
+<div id="storyStage">
+  <div id="stickyStage">
+    <div id="stage"></div>
+    <div id="captionDock">
+      <div id="capEyebrow"></div>
+      <div id="capBody"></div>
+    </div>
+  </div>
+
+  <div id="steps">
+    <section class="step" data-count="27" data-hl="" data-eyebrow="1950"
+      data-body="FIDE creates the Grandmaster title and grandfathers in 27 players at once — a chess world reordering itself after WWII gets its first formal ranking."></section>
+    <section class="step" data-count="27" data-hl="ru" data-eyebrow="1950"
+      data-body="Eleven of the twenty-seven are already Soviet. Before the Cold War chess rivalry even has a name, one country already dominates by sheer volume."></section>
+    <section class="step" data-count="49" data-hl="ar" data-eyebrow="1950–1955"
+      data-body="Miguel Najdorf — stranded in Buenos Aires by the 1939 Olympiad while his family perished in the Holocaust — stays. By 1955, Argentina has its own homegrown grandmaster: Óscar Panno."></section>
+    <section class="step" data-count="58" data-hl="us" data-eyebrow="1958"
+      data-body="A 15-year-old from Brooklyn, Bobby Fischer, becomes the youngest grandmaster in history."></section>
+    <div class="tail-spacer"></div>
+  </div>
+</div>
+
+<p class="credit">Data: FIDE grandmaster titles, 1950–present. Dissolved federations (Soviet Union, Czechoslovakia, Yugoslavia, East/West Germany) are shown under their principal present-day successor state.</p>
+
+<script>
+(function() {
+  const stage = document.getElementById('stage');
+  const capEyebrow = document.getElementById('capEyebrow');
+  const capBody = document.getElementById('capBody');
+  const stepEls = Array.from(document.querySelectorAll('.step'));
+
+  const BASE = 100;
+  const EASE = 'cubic-bezier(.16,1,.3,1)';
+  const MOVE_MS = 560;
+  const MAX_STAGGER_MS = 220;
+
+  const KING = `<svg viewBox="0 0 45 45" fill="currentColor"><g stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63V6M20 8h5" stroke-width="1.5"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5" fill="currentColor" stroke-linecap="butt"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-2.5-7.5-12-10.5-16-4-3 6 6 10.5 6 10.5v7z" fill="currentColor"/></g></svg>`;
+  const QUEEN = `<svg viewBox="0 0 45 45" fill="currentColor"><g stroke="currentColor" stroke-width="1.5" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13a2 2 0 11-4 0 2 2 0 114 0zM36.5 13a2 2 0 11-4 0 2 2 0 114 0zM22.5 9.5a2 2 0 11-4 0 2 2 0 114 0zM32 14a2 2 0 11-4 0 2 2 0 114 0zM13 14a2 2 0 11-4 0 2 2 0 114 0z"/><path d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5-7 11-.5-13.5-5.5 12L22.5 10l-2.5 13.5-5.5-12L14 25.5l-7-11L9 26z" stroke-linecap="butt"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z" stroke-linecap="butt"/></g></svg>`;
+
+  // minimal quote-aware CSV line split — fields are only quoted when they contain a
+  // comma (e.g. "Last, First"), so a plain split(',') breaks on unquoted single-word names.
+  function splitCSVLine(line) {
+    const cells = [];
+    let cur = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQuotes = !inQuotes; continue; }
+      if (c === ',' && !inQuotes) { cells.push(cur); cur = ''; continue; }
+      cur += c;
+    }
+    cells.push(cur);
+    return cells;
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    const header = splitCSVLine(lines[0]);
+    return lines.slice(1).map(line => {
+      const cells = splitCSVLine(line);
+      const row = {};
+      header.forEach((key, i) => { row[key] = cells[i]; });
+      return row;
+    });
+  }
+
+  function makeStableGrid() {
+    let cols = 0, rows = 0;
+    const emptyQueue = [];
+    const slots = [];
+    function grow(targetAspect) {
+      if (cols === 0) { cols = 1; rows = 1; emptyQueue.push({row:0,col:0}); return; }
+      const aspectIfCol = (cols + 1) / rows;
+      const aspectIfRow = cols / (rows + 1);
+      const addCol = Math.abs(Math.log(aspectIfCol/targetAspect)) <= Math.abs(Math.log(aspectIfRow/targetAspect));
+      if (addCol) { const nc = cols; cols += 1; for (let r=0;r<rows;r++) emptyQueue.push({row:r,col:nc}); }
+      else { const nr = rows; rows += 1; for (let c=0;c<cols;c++) emptyQueue.push({row:nr,col:c}); }
+    }
+    return {
+      seed(n0, targetAspect) {
+        cols = Math.max(1, Math.round(Math.sqrt(n0 * targetAspect)));
+        rows = Math.ceil(n0 / cols);
+        for (let i = 0; i < n0; i++) slots[i] = { row: Math.floor(i/cols), col: i % cols };
+        for (let i = n0; i < cols*rows; i++) emptyQueue.push({ row: Math.floor(i/cols), col: i % cols });
+      },
+      slotFor(i, targetAspect) {
+        if (slots[i]) return slots[i];
+        while (emptyQueue.length === 0) grow(targetAspect);
+        const s = emptyQueue.shift(); slots[i] = s; return s;
+      },
+      dims() { return { cols, rows }; }
+    };
+  }
+
+  fetch('data.csv').then(r => r.text()).then(text => {
+    const GM = parseCSV(text);
+    init(GM);
+  });
+
+  function init(GM) {
+    const grid = makeStableGrid();
+    const els = [];
+    let highlight = '';
+
+    function ensureEl(i) {
+      if (els[i]) return els[i];
+      const gm = GM[i];
+      const node = document.createElement('div');
+      node.style.position='absolute'; node.style.left='0'; node.style.top='0';
+      node.style.width=BASE+'px'; node.style.height=BASE+'px';
+      node.style.marginLeft=(-BASE/2)+'px'; node.style.marginTop=(-BASE/2)+'px';
+      node.style.transformOrigin='center center'; node.style.opacity='0';
+
+      const inner = document.createElement('div');
+      inner.style.position='relative'; inner.style.width='100%'; inner.style.height='100%';
+      inner.style.transformStyle='preserve-3d';
+      inner.style.transition='transform 620ms cubic-bezier(.34,1.2,.4,1)';
+
+      const front = document.createElement('div');
+      front.style.position='absolute'; front.style.inset='0'; front.style.borderRadius='50%';
+      front.style.display='flex'; front.style.alignItems='center'; front.style.justifyContent='center';
+      front.style.backfaceVisibility='hidden';
+      front.style.background='radial-gradient(circle at 35% 30%, #7a7a7e, #55555a 75%)';
+      front.style.boxShadow='inset 0 0 0 1px rgba(255,255,255,0.08), 0 1px 3px rgba(0,0,0,0.4)';
+      front.style.color='#c9c9ce';
+      const iconWrap = document.createElement('div');
+      iconWrap.style.width='58%'; iconWrap.style.height='58%';
+      iconWrap.innerHTML = gm.sex === 'F' ? QUEEN : KING;
+      front.appendChild(iconWrap);
+
+      const back = document.createElement('div');
+      back.style.position='absolute'; back.style.inset='0'; back.style.borderRadius='50%';
+      back.style.backfaceVisibility='hidden'; back.style.transform='rotateY(180deg)';
+      if (gm.flag) {
+        back.style.backgroundImage=`url(https://flagcdn.com/w80/${gm.flag}.png)`;
+        back.style.backgroundSize='cover'; back.style.backgroundPosition='center';
+      } else {
+        back.style.background = '#3a3a3f';
+      }
+      back.style.boxShadow='0 0 0 3px #d4af6a, 0 0 16px 3px rgba(212,175,106,0.5)';
+
+      inner.appendChild(front); inner.appendChild(back);
+      node.appendChild(inner);
+      stage.appendChild(node);
+
+      node.dataset.flag = gm.flag || ''; node.dataset.placed = '0';
+      node._inner = inner;
+      els[i] = node;
+      return node;
+    }
+
+    function place(node, cx, cy, r, delayMs) {
+      const scale = (r*2)/BASE;
+      const isHl = highlight && node.dataset.flag === highlight;
+      node._inner.style.transitionDelay = '0ms';
+      node._inner.style.transform = isHl ? 'rotateY(180deg)' : 'rotateY(0deg)';
+
+      if (node.dataset.placed === '0') {
+        node.style.transition = 'opacity 240ms ease-out';
+        node.style.transitionDelay = '0ms';
+        node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+        requestAnimationFrame(() => { node.style.opacity = '1'; });
+        node.dataset.placed = '1';
+      } else {
+        node.style.transition = `transform ${MOVE_MS}ms ${EASE}, opacity 320ms ease-out`;
+        node.style.transitionDelay = `${delayMs}ms`;
+        node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+        node.style.opacity = '1';
+      }
+    }
+
+    function render(n) {
+      const W = stage.clientWidth;
+      const H = stage.clientHeight;
+      for (let i=0;i<n;i++) ensureEl(i);
+      while (els.length > n) {
+        const node = els.pop();
+        node.style.transition = `transform ${MOVE_MS}ms ${EASE}, opacity 220ms ease-out`;
+        const cur = node.style.transform || 'scale(0)';
+        node.style.transform = cur.replace(/scale\([^)]*\)/, 'scale(0)');
+        node.style.opacity = '0';
+        setTimeout(() => node.remove(), MOVE_MS);
+      }
+      const aspect = W / H;
+      if (grid.dims().cols === 0 && n > 0) grid.seed(n, aspect);
+
+      const slotsForN = [];
+      let maxRow = 0, maxCol = 0;
+      for (let i = 0; i < n; i++) {
+        const s = grid.slotFor(i, aspect);
+        slotsForN.push(s);
+        if (s.row > maxRow) maxRow = s.row;
+        if (s.col > maxCol) maxCol = s.col;
+      }
+      // size cells off the bounding box actually used by the current n (not the grid's
+      // lifetime-max cols/rows) so scrolling back to a lower count rescales up correctly.
+      const cols = maxCol + 1, rows = maxRow + 1;
+      const cell = Math.min(W/cols, H/rows);
+      const r = cell * 0.44;
+      // bottom-anchor the grid, then nudge down by the cell/circle padding difference so the
+      // circle edge itself (not the invisible cell boundary) sits flush against the caption zone.
+      const offX = (W-cols*cell)/2, offY = H-rows*cell+(cell/2-r);
+
+      for (let i=0;i<n;i++) {
+        const slot = slotsForN[i];
+        const cx = offX+slot.col*cell+cell/2, cy = offY+slot.row*cell+cell/2;
+        const delay = rows > 1 ? Math.min(MAX_STAGGER_MS, (slot.row/Math.max(1,rows-1))*MAX_STAGGER_MS) : 0;
+        place(els[i], cx, cy, r, delay);
+      }
+    }
+
+    let activeStep = -1;
+    function setActive(idx) {
+      if (idx === activeStep) return;
+      activeStep = idx;
+      const s = stepEls[idx];
+      highlight = s.dataset.hl;
+      capEyebrow.style.opacity = '0'; capBody.style.opacity = '0';
+      setTimeout(() => {
+        capEyebrow.textContent = s.dataset.eyebrow;
+        capBody.textContent = s.dataset.body;
+        capEyebrow.style.opacity = '1'; capBody.style.opacity = '1';
+      }, 180);
+      render(+s.dataset.count);
+    }
+
+    function onScroll() {
+      const stageRect = document.getElementById('stickyStage').getBoundingClientRect();
+      const centerY = stageRect.top + stageRect.height * 0.55;
+      let idx = 0;
+      for (let i = 0; i < stepEls.length; i++) {
+        const r = stepEls[i].getBoundingClientRect();
+        if (r.top <= centerY) idx = i;
+      }
+      setActive(idx);
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    setActive(0);
+    onScroll();
+    window.addEventListener('resize', () => render(+stepEls[activeStep].dataset.count));
+  }
+})();
+</script>
+</body>
+</html>

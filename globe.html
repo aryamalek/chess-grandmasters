@@ -1,0 +1,756 @@
+<meta charset="utf-8">
+<title>Grandmasters of Chess — Globe Prototype</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #05070d;
+    color: #f5f1e8;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    height: 100%;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* One cohesive, content-sized block — title, map and slider stacked with no forced full-height
+     stretching, so there's no leftover black space above/below the map to fill. */
+  .app {
+    width: 100%;
+    max-width: 1400px;
+  }
+
+  /* Height is locked to the crop's own lon:lat ratio (set from CROP in JS), so the box the map
+     renders into always exactly matches the map's shape — no axis is ever under-filled. */
+  .globeWrap {
+    position: relative;
+    width: 100%;
+  }
+  #globe { width: 100%; height: 100%; display: block; overflow: visible; }
+  #tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(5,7,13,0.96);
+    border: 1px solid rgba(245,241,232,0.25);
+    border-radius: 6px;
+    padding: 8px 11px;
+    font-size: 13px;
+    line-height: 1.55;
+    display: none;
+    z-index: 5;
+    white-space: nowrap;
+  }
+  #tooltip b { color: #ffd166; }
+
+  /* Slider gets its own full-width row so its track lines up 1:1 with the map/chart's own edges —
+     no play button or mode toggle sharing the row and eating into that width anymore. */
+  #yearSlider {
+    display: block;
+    width: 100%;
+    margin: 10px 0 0;
+    accent-color: #3a7bd5;
+  }
+  .controlsRow {
+    padding: 10px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  #playBtn {
+    background: #3a7bd5;
+    color: #f5f1e8;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    flex: 0 0 auto;
+  }
+  #playBtn:hover { background: #2a5da8; }
+  .modeToggle { display: flex; flex: 0 0 auto; border: 1px solid rgba(245,241,232,0.25); border-radius: 6px; overflow: hidden; }
+  .modeBtn {
+    background: transparent; color: rgba(245,241,232,0.55); border: none; cursor: pointer;
+    font-size: 19px; line-height: 1; padding: 8px 14px; font-family: inherit;
+  }
+  .modeBtn + .modeBtn { border-left: 1px solid rgba(245,241,232,0.25); }
+  .modeBtn.active { background: #ffd166; color: #1a1400; }
+  #yearLabel {
+    font-family: 'Arial Black', Helvetica, Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    min-width: 60px;
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+  }
+</style>
+
+<div class="app">
+  <div class="globeWrap">
+    <svg id="globe"></svg>
+    <div id="tooltip"></div>
+  </div>
+
+  <input type="range" id="yearSlider" min="1950" max="2026" value="1950" step="1">
+
+  <div class="controlsRow">
+    <button id="playBtn">▶ Play</button>
+    <div class="modeToggle" id="modeToggle">
+      <button class="modeBtn active" data-mode="ALL" title="All grandmasters" aria-label="All grandmasters">♚</button>
+      <button class="modeBtn" data-mode="FEMALE" title="Women grandmasters only" aria-label="Women grandmasters only">♛</button>
+    </div>
+    <div id="yearLabel">1950</div>
+  </div>
+</div>
+
+<script>
+Promise.all([
+  d3.json('gm_timeseries.json'),
+  d3.json('world.geojson'),
+  d3.json('historical_blocs.geojson'),
+]).then(([data, world, historicalBlocs]) => {
+  const { years, total_cumulative, total_cumulative_F, federations_cumulative, federations_cumulative_F, federations_new_by_year, federation_country, bloc_handoff, bloc_handoff_f } = data;
+  const yearIndex = y => y - years[0];
+
+  const svg = d3.select('#globe');
+  const globeWrap = document.querySelector('.globeWrap');
+  let W = globeWrap.clientWidth, H = globeWrap.clientHeight;
+
+  const projection = d3.geoEquirectangular();
+  const path = d3.geoPath(projection);
+
+  // Crop window, hand-picked rather than derived from d3.geoBounds(world) — Fiji (or another
+  // antimeridian-straddling feature) makes geoBounds degrade to the full -180..180 range, which
+  // silently defeated the crop entirely. Bounds below: cuts the empty Alaska/Bering/mid-Pacific
+  // gap on the left, hugs just past New Zealand on the right, and Antarctica isn't needed.
+  const CROP = { lonMin: -118, lonMax: 182, latMin: -58, latMax: 78 };
+  const toRad = Math.PI / 180;
+  // The map box's own CSS aspect-ratio is locked to this same crop, so width and height always
+  // agree and neither axis is ever under- or over-filled (the source of the old dead-space bug).
+  globeWrap.style.aspectRatio = `${CROP.lonMax - CROP.lonMin} / ${CROP.latMax - CROP.latMin}`;
+  // Width always fills the frame edge to edge, no left/right margin.
+  function sizeSvg() {
+    W = globeWrap.clientWidth; H = globeWrap.clientHeight;
+    const lonSpan = (CROP.lonMax - CROP.lonMin) * toRad;
+    const scale = W / lonSpan;
+    const centerLonRad = (CROP.lonMin + CROP.lonMax) / 2 * toRad;
+    const centerLatRad = (CROP.latMin + CROP.latMax) / 2 * toRad;
+    projection.rotate([0, 0, 0]).center([0, 0]).scale(scale)
+      .translate([W / 2 - scale * centerLonRad, H / 2 + scale * centerLatRad]);
+    svg.attr('width', W).attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+    clipRect.attr('width', W).attr('height', H);
+  }
+
+  // Map content is clipped to the frame; the flyer layer is deliberately outside the clip so a
+  // shot can still originate off-frame at the slider and fly in.
+  const clipRect = svg.append('defs').append('clipPath').attr('id', 'mapClip').append('rect').attr('x', 0).attr('y', 0);
+
+  // King/Queen piece glyphs (Cburnett set, Wikimedia Commons, CC BY-SA 3.0), recoloured via
+  // currentColor — used next to the trend chart's running total and next to each country's "+n"
+  // delta badge, picking king or queen based on the current All/Women filter.
+  svg.append('defs').html(`
+    <symbol id="piece-king" viewBox="0 0 45 45">
+      <g style="fill:none; fill-opacity:1; fill-rule:evenodd; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; stroke-miterlimit:4;">
+        <path d="M 22.5,11.63 L 22.5,6" style="fill:none; stroke:currentColor; stroke-linejoin:miter;"/>
+        <path d="M 22.5,25 C 22.5,25 27,17.5 25.5,14.5 C 25.5,14.5 24.5,12 22.5,12 C 20.5,12 19.5,14.5 19.5,14.5 C 18,17.5 22.5,25 22.5,25" style="fill:currentColor; fill-opacity:1; stroke-linecap:butt; stroke-linejoin:miter;"/>
+        <path d="M 12.5,37 C 18,40.5 27,40.5 32.5,37 L 32.5,30 C 32.5,30 41.5,25.5 38.5,19.5 C 34.5,13 25,16 22.5,23.5 L 22.5,27 L 22.5,23.5 C 20,16 10.5,13 6.5,19.5 C 3.5,25.5 12.5,30 12.5,30 L 12.5,37" style="fill:currentColor; stroke:currentColor;"/>
+        <path d="M 20,8 L 25,8" style="fill:none; stroke:currentColor; stroke-linejoin:miter;"/>
+        <path d="M 32,29.5 C 32,29.5 40.5,25.5 38.03,19.85 C 34.15,14 25,18 22.5,24.5 L 22.5,26.6 L 22.5,24.5 C 20,18 10.85,14 6.97,19.85 C 4.5,25.5 13,29.5 13,29.5" style="fill:none; stroke:#ffffff;"/>
+        <path d="M 12.5,30 C 18,27 27,27 32.5,30 M 12.5,33.5 C 18,30.5 27,30.5 32.5,33.5 M 12.5,37 C 18,34 27,34 32.5,37" style="fill:none; stroke:#ffffff;"/>
+      </g>
+    </symbol>
+    <symbol id="piece-queen" viewBox="0 0 45 45">
+      <g style="fill:currentColor; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round;">
+        <path d="M 9,26 C 17.5,24.5 30,24.5 36,26 L 38.5,13.5 L 31,25 L 30.7,10.9 L 25.5,24.5 L 22.5,10 L 19.5,24.5 L 14.3,10.9 L 14,25 L 6.5,13.5 L 9,26 z" style="stroke-linecap:butt; fill:currentColor;"/>
+        <path d="m 9,26 c 0,2 1.5,2 2.5,4 1,1.5 1,1 0.5,3.5 -1.5,1 -1,2.5 -1,2.5 -1.5,1.5 0,2.5 0,2.5 6.5,1 16.5,1 23,0 0,0 1.5,-1 0,-2.5 0,0 0.5,-1.5 -1,-2.5 -0.5,-2.5 -0.5,-2 0.5,-3.5 1,-2 2.5,-2 2.5,-4 -8.5,-1.5 -18.5,-1.5 -27,0 z"/>
+        <path d="M 11.5,30 C 15,29 30,29 33.5,30"/>
+        <path d="m 12,33.5 c 6,-1 15,-1 21,0"/>
+        <circle cx="6" cy="12" r="2"/>
+        <circle cx="14" cy="9" r="2"/>
+        <circle cx="22.5" cy="8" r="2"/>
+        <circle cx="31" cy="9" r="2"/>
+        <circle cx="39" cy="12" r="2"/>
+        <path d="M 11,38.5 A 35,35 1 0 0 34,38.5" style="fill:none; stroke:currentColor; stroke-linecap:butt;"/>
+        <g style="fill:none; stroke:#ffffff;">
+          <path d="M 11,29 A 35,35 1 0 1 34,29"/>
+          <path d="M 12.5,31.5 L 32.5,31.5"/>
+          <path d="M 11.5,34.5 A 35,35 1 0 0 33.5,34.5"/>
+          <path d="M 10.5,37.5 A 35,35 1 0 0 34.5,37.5"/>
+        </g>
+      </g>
+    </symbol>
+  `);
+  // Gold reuses the same colour the "+3" pulse already uses elsewhere on the map, so the trend
+  // line reads as the same "growth" signal rather than introducing a new hue.
+  const TREND_COLOR = '#ffd166';
+  const COUNTRY_LINE_COLOR = '#3a7bd5';
+
+  const gMap = svg.append('g').attr('clip-path', 'url(#mapClip)');
+  const sphere = gMap.append('rect').attr('fill', '#d6e8f2');
+  const gLand = gMap.append('g');
+  // Dissolved historical-federation shapes (USSR, Czechoslovakia, Yugoslavia, Serbia & Montenegro,
+  // East/West Germany) — opaque, so during each bloc's active years it fully covers its member
+  // countries' own (mostly stray/zero) individual polygons underneath rather than the two
+  // disagreeing. Takes its own pointer events (see blocEls below) so hovering shows the bloc's own
+  // stats, not whatever's hidden underneath.
+  const gBlocs = gMap.append('g');
+  const gLabels = gMap.append('g').style('pointer-events', 'none');
+  // Trend chart sits directly on the map, no panel behind it — legibility instead comes from the
+  // line/area's own treatment: a soft dark "casing" stroke doubled under the gold line (the same
+  // halo trick text labels use via paint-order:stroke, just built by hand since a path can't do
+  // paint-order the same way), and a top-to-bottom gradient fill instead of a flat tint.
+  const chartFillGradient = svg.append('defs').append('linearGradient')
+    .attr('id', 'chartFillGradient').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+  chartFillGradient.append('stop').attr('offset', '0%').attr('stop-color', TREND_COLOR).attr('stop-opacity', 0.5);
+  chartFillGradient.append('stop').attr('offset', '100%').attr('stop-color', TREND_COLOR).attr('stop-opacity', 0.03);
+  // pointer-events:none throughout so it never blocks clicking a country.
+  const gChart = gMap.append('g').style('pointer-events', 'none');
+  const totalArea = gChart.append('path').attr('fill', 'url(#chartFillGradient)');
+  const totalLineCasing = gChart.append('path').attr('fill', 'none')
+    .attr('stroke', '#0a0a0a').attr('stroke-opacity', 0.6).attr('stroke-width', 7)
+    .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+  const totalLine = gChart.append('path').attr('fill', 'none')
+    .attr('stroke', TREND_COLOR).attr('stroke-width', 3)
+    .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+  const countryLineCasing = gChart.append('path').attr('fill', 'none')
+    .attr('stroke', '#0a0a0a').attr('stroke-opacity', 0.6).attr('stroke-width', 6)
+    .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round').style('display', 'none');
+  const countryLine = gChart.append('path').attr('fill', 'none')
+    .attr('stroke', COUNTRY_LINE_COLOR).attr('stroke-width', 2.5)
+    .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round').style('display', 'none');
+  // A dark medallion behind the piece so gold-on-gold-ish light land/water never loses contrast —
+  // same fix text labels already get from their stroke halo, just a filled disc instead of a
+  // stroke since the piece silhouette has open/unfilled areas a halo stroke wouldn't cover.
+  const ICON_SIZE = 24;
+  const totalIconBadge = gChart.append('circle').attr('r', ICON_SIZE * 0.66)
+    .attr('fill', '#12141c').attr('stroke', TREND_COLOR).attr('stroke-width', 1.5);
+  const totalKing = gChart.append('use').attr('href', '#piece-king')
+    .attr('width', ICON_SIZE).attr('height', ICON_SIZE).style('color', TREND_COLOR);
+  const chartTotalLabel = gChart.append('text').attr('dominant-baseline', 'central')
+    .attr('font-family', "'Arial Black', Helvetica, Arial, sans-serif").attr('font-weight', 900)
+    .attr('font-size', 15).attr('fill', TREND_COLOR)
+    .attr('stroke', '#0a0a0a').attr('stroke-width', 3).attr('paint-order', 'stroke');
+
+  // ---- federations grouped by the country polygon they belong to (e.g. Soviet Union & Russia
+  // are different federations but the same shape on the map; a handful of tiny federations with
+  // no polygon at this map resolution — Andorra, Luxembourg, Singapore, Faroe Islands, FIDE —
+  // are skipped on the choropleth, though they still count in the running total up top). ----
+  const featureByName = new Map(world.features.map((f) => [f.properties.NAME, f]));
+  const countryFeds = new Map(); // country NAME -> [federation names]
+  for (const fed of Object.keys(federation_country)) {
+    const name = federation_country[fed];
+    if (!countryFeds.has(name)) countryFeds.set(name, []);
+    countryFeds.get(name).push(fed);
+  }
+  // ALL = every grandmaster; FEMALE = the subset of that same title held by women (44 of the
+  // 2,143 — a reliable slice of data already on hand, not the separate/much-less-documented WGM
+  // title). Toggled by the king/queen buttons in the control bar.
+  let vizMode = 'ALL';
+  // A successor's own federation count, plus its one-time inherited share of any bloc it used to
+  // belong to (see BLOC_DEFS' handoff below) once that bloc has actually dissolved — added as a
+  // flat bonus from the year after dissolution onward, not something that grows on its own.
+  function countryCumAt(name, yIdx) {
+    const src = vizMode === 'FEMALE' ? federations_cumulative_F : federations_cumulative;
+    const handoffSrc = vizMode === 'FEMALE' ? bloc_handoff_f : bloc_handoff;
+    let sum = 0;
+    for (const fed of countryFeds.get(name) || []) sum += (src[fed]?.[yIdx] || 0);
+    const year = years[yIdx];
+    for (const def of BLOC_DEFS) {
+      if (year > def.until) sum += (handoffSrc[def.id] || {})[name] || 0;
+    }
+    return sum;
+  }
+
+  // Dissolved federations that no longer exist — each shown as one unified landmass for the years
+  // it was actually one country, then retired once it split. Its accumulated total is handed to
+  // its successors by birthplace (see handoff below) the moment it dissolves, rather than the
+  // successors starting from zero. `from`/`until` are inclusive; ranges never overlap a member
+  // country's own individual choropleth years, so there's only ever one "true" fill for any given
+  // piece of land in any given year.
+  const BLOC_DEFS = [
+    { id: 'ussr', feds: ['Soviet Union'], from: years[0], until: 1991, label: 'USSR',
+      members: ['Russia', 'Ukraine', 'Belarus', 'Georgia', 'Armenia', 'Azerbaijan', 'Kazakhstan',
+        'Uzbekistan', 'Turkmenistan', 'Kyrgyzstan', 'Tajikistan', 'Estonia', 'Latvia', 'Lithuania', 'Moldova'] },
+    { id: 'czechoslovakia', feds: ['Czechoslovakia'], from: years[0], until: 1992, label: 'Czechoslovakia',
+      members: ['Czechia', 'Slovakia'] },
+    { id: 'yugoslavia', feds: ['Yugoslavia'], from: years[0], until: 1991, label: 'Yugoslavia',
+      members: ['Serbia', 'Montenegro', 'Croatia', 'Slovenia', 'Bosnia and Herz.', 'North Macedonia'] },
+    { id: 'serbia_montenegro', feds: ['Yugoslavia (S&M)', 'Serbia and Montenegro'], from: 1992, until: 2005, label: 'Serbia & Montenegro',
+      members: ['Serbia', 'Montenegro'] },
+    // The reverse case — two countries merging into one, not one splitting into many. Both claim
+    // the same member ("Germany"), so it stays suppressed for as long as either is active, then
+    // reunified Germany takes over from 1991 with its full history (unlike the USSR split, a
+    // merger has a genuine single continuous successor, so nothing here is retroactively erased).
+    // Approximated from modern Bundesländer, since no historical inner-German-border polygon
+    // exists in any current map dataset; Berlin (not divisible at state-level) is folded into East.
+    { id: 'east_germany', feds: ['East Germany'], from: years[0], until: 1990, label: 'East Germany',
+      members: ['Germany'] },
+    { id: 'west_germany', feds: ['West Germany'], from: years[0], until: 1990, label: 'West Germany',
+      members: ['Germany'] },
+  ];
+  // Yugoslavia -> Serbia & Montenegro is a two-stage succession: when Yugoslavia dissolves in
+  // 1991, Serbia and Montenegro's shares don't get an individual display of their own yet — they
+  // immediately fall under the Serbia & Montenegro bloc instead. So a bloc also has to inherit any
+  // handoff its own members would separately be owed from an earlier-dissolved bloc, or that share
+  // goes visually missing for the years this bloc sits on top of them.
+  function blocCumAt(def, yIdx) {
+    const src = vizMode === 'FEMALE' ? federations_cumulative_F : federations_cumulative;
+    const handoffSrc = vizMode === 'FEMALE' ? bloc_handoff_f : bloc_handoff;
+    let sum = 0;
+    for (const fed of def.feds) sum += (src[fed]?.[yIdx] || 0);
+    const year = years[yIdx];
+    for (const otherDef of BLOC_DEFS) {
+      if (otherDef === def || year <= otherDef.until) continue;
+      for (const m of def.members) sum += (handoffSrc[otherDef.id] || {})[m] || 0;
+    }
+    return sum;
+  }
+  // Which countries a currently-active bloc has "claimed" this year — their own individual number
+  // stays suppressed (even if their own federation entry has stray pre-independence data) so the
+  // bloc's single unified number is the only one visible on that land.
+  let suppressedByBloc = new Set();
+  function updateSuppressedByBloc(year) {
+    suppressedByBloc = new Set();
+    for (const def of BLOC_DEFS) {
+      if (year >= def.from && year <= def.until) for (const m of def.members) suppressedByBloc.add(m);
+    }
+  }
+
+  function computeMaxEverCount() {
+    let m = 0;
+    for (const name of countryFeds.keys()) m = Math.max(m, countryCumAt(name, years.length - 1));
+    for (const def of BLOC_DEFS) m = Math.max(m, blocCumAt(def, years.length - 1));
+    return m;
+  }
+  let maxEverCount = computeMaxEverCount();
+
+  gLand.selectAll('path').data(world.features).join('path')
+    .attr('fill', '#ffffff')
+    .attr('stroke', '#d8d8d8').attr('stroke-width', 0.6).attr('stroke-opacity', 0.7)
+    .style('cursor', (d) => countryFeds.has(d.properties.NAME) ? 'pointer' : 'default')
+    .on('mouseenter', function (event, d) { showTooltip(event, d.properties.NAME); })
+    .on('mousemove', moveTooltip)
+    .on('mouseleave', hideTooltip)
+    .on('click', function (event, d) {
+      const name = d.properties.NAME;
+      if (!countryFeds.has(name)) return;
+      selectedCountry = selectedCountry === name ? null : name;
+      renderTrendChart();
+    });
+  sphere.style('pointer-events', 'auto').on('click', () => { selectedCountry = null; renderTrendChart(); });
+
+  // Colour scale: neutral land until a country's first title, then a log-scaled ramp so Russia
+  // (~264) doesn't make every smaller country look the same dim shade the way a linear scale would.
+  // White to black — light-to-dark reads as "more" on a white board, same logic as the ink-blue
+  // scale before, just monochrome now instead of a hue.
+  const LAND = '#ffffff', FILL_LOW = '#cfcfcf', FILL_HIGH = '#0a0a0a';
+  function fillFor(count) {
+    if (count <= 0) return LAND;
+    const t = Math.log(count + 1) / Math.log(maxEverCount + 1);
+    return d3.interpolateRgb(FILL_LOW, FILL_HIGH)(t);
+  }
+
+  // Counter appears only when the number is actually worth showing — big enough on screen to
+  // hold it, AND a large enough count to be meaningful. Area alone isn't enough: by the later
+  // years plenty of countries sit at 1-2 titles, and a physically large country with a "1" is
+  // just as much clutter as a tiny one — this is a fixed floor, not tuned to any one year, so it
+  // behaves the same way throughout the whole timeline (few or no labels early on is correct).
+  const LABEL_MIN_AREA = 900;
+  const LABEL_MIN_COUNT = 5;
+  // These four are too small on screen to clear LABEL_MIN_AREA at this map scale but are too
+  // chess-significant to leave unlabeled — bypass the area floor, not the count floor.
+  const LABEL_FORCE = new Set(['Germany', 'Poland', 'Spain', 'United Kingdom']);
+  // Female mode's totals top out around 9 (China) — the ALL-mode floors built for a max of 363
+  // would leave almost nothing labelled, so every country with at least one female GM gets shown.
+  function labelThresholdsOk(name, total, area) {
+    if (vizMode === 'FEMALE') return total >= 1;
+    return total >= LABEL_MIN_COUNT && (area >= LABEL_MIN_AREA || LABEL_FORCE.has(name));
+  }
+  function labelFontSize(area) {
+    return Math.max(11, Math.min(28, 8 + Math.sqrt(area) * 0.1));
+  }
+
+  // path.centroid() on a MultiPolygon is area-weighted across every part — for a country like
+  // the USA (mainland + Alaska + Hawaii + territories, 10 parts) or France (mainland + overseas
+  // territories, 3 parts), that drags the label away from the part anyone actually looks at.
+  // Use the centroid of the single largest part instead. Takes the path generator as a param so
+  // the Europe inset (its own projection/path below) can reuse the same logic.
+  function mainPartCentroidFor(feature, pathGen) {
+    const geom = feature.geometry;
+    if (geom.type !== 'MultiPolygon') return pathGen.centroid(feature);
+    let best = null, bestArea = -1;
+    for (const coords of geom.coordinates) {
+      const part = { type: 'Feature', geometry: { type: 'Polygon', coordinates: coords } };
+      const a = Math.abs(pathGen.area(part));
+      if (a > bestArea) { bestArea = a; best = part; }
+    }
+    return best ? pathGen.centroid(best) : pathGen.centroid(feature);
+  }
+  function mainPartCentroid(feature) { return mainPartCentroidFor(feature, path); }
+
+  const blocFeatureById = new Map(historicalBlocs.features.map((f) => [f.properties.BLOC, f]));
+  const blocEls = BLOC_DEFS.map((def) => {
+    const feature = blocFeatureById.get(def.id);
+    const fillPath = gBlocs.append('path').datum(feature)
+      .attr('stroke', '#d8d8d8').attr('stroke-width', 0.6).attr('stroke-opacity', 0.7)
+      .style('cursor', 'default')
+      .on('mouseenter', (event) => showBlocTooltip(event, def))
+      .on('mousemove', moveTooltip)
+      .on('mouseleave', hideTooltip);
+    const label = gLabels.append('text').attr('class', 'num').datum(feature)
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+      .attr('font-family', "'Arial Black', Helvetica, Arial, sans-serif")
+      .attr('font-weight', 900).attr('fill', '#f5f1e8')
+      .attr('stroke', '#0c1220').attr('stroke-width', 3).attr('paint-order', 'stroke');
+    return { def, feature, fillPath, label };
+  });
+  function renderBlocs(yIdx, year, animate) {
+    for (const el of blocEls) {
+      const { def, feature, fillPath, label } = el;
+      const active = year >= def.from && year <= def.until;
+      fillPath.style('display', active ? null : 'none');
+      label.style('display', active ? null : 'none');
+      if (!active) continue;
+      const total = blocCumAt(def, yIdx);
+      const shade = fillFor(total);
+      fillPath.attr('fill', shade);
+      const area = Math.abs(path.area(feature));
+      const prevTotal = el.prevTotal || 0;
+      el.prevTotal = total;
+      if (total >= 1) {
+        const [cx, cy] = mainPartCentroid(feature);
+        const fontSize = labelFontSize(area);
+        label.attr('x', cx).attr('y', cy).attr('stroke', shade).attr('font-size', fontSize);
+        const delta = total - prevTotal;
+        if (animate && prevTotal >= 1 && delta > 0) {
+          label.interrupt()
+            .transition().duration(90).attr('font-size', fontSize * 1.35)
+            .transition().duration(280).ease(d3.easeCubicOut).attr('font-size', fontSize)
+            .tween('text', function () {
+              const node = this;
+              const i = d3.interpolateRound(prevTotal, total);
+              return (t) => { node.textContent = i(t).toLocaleString(); };
+            });
+          showDelta(cx, cy, fontSize, delta);
+        } else {
+          label.text(total.toLocaleString());
+        }
+      } else {
+        label.text('');
+      }
+    }
+  }
+
+  // A handful of long, thin countries land their geometric centroid somewhere unhelpful — Norway
+  // and Sweden both put it in the narrow strip north of where anyone actually looks. Hand-placed
+  // in the wider stretch just above their capitals instead.
+  const LABEL_POS_OVERRIDE = {
+    Norway: [9.5, 61.3],
+    Sweden: [15.5, 60.3],
+  };
+  // Small pixel nudges (as a fraction of map height) for labels that are positioned fine but sit
+  // a touch too high/low for the shape underneath — China's centroid lands just above where it
+  // reads best.
+  const LABEL_NUDGE = {
+    China: 0.02,
+  };
+  function labelPosition(feature) {
+    const name = feature.properties.NAME;
+    const override = LABEL_POS_OVERRIDE[name];
+    let pos = null;
+    if (override) pos = projection(override);
+    if (!pos) pos = mainPartCentroid(feature);
+    const nudge = LABEL_NUDGE[name];
+    if (nudge) pos = [pos[0], pos[1] + nudge * H];
+    return pos;
+  }
+
+  const currentTotals = new Map(); // country NAME -> total currently displayed (post any animation)
+
+  // Labels are created in whatever order countries first cross the threshold, which has nothing
+  // to do with which one matters more — without this, a bigger country's number can end up
+  // silently painted UNDER a smaller neighbour's. Re-sorts so the largest current values always
+  // paint last (on top).
+  function raiseBiggestLabels() {
+    gLabels.selectAll('text.num').sort((a, b) =>
+      (currentTotals.get(a.properties.NAME) || 0) - (currentTotals.get(b.properties.NAME) || 0));
+  }
+
+  function renderCountry(name, total, animate) {
+    const prevTotal = currentTotals.get(name) || 0;
+    currentTotals.set(name, total);
+    const feature = featureByName.get(name);
+    if (!feature) return;
+    const shade = fillFor(total);
+    const landSel = gLand.selectAll('path').filter((d) => d === feature);
+    (animate ? landSel.transition().duration(320) : landSel).attr('fill', shade);
+
+    const area = Math.abs(path.area(feature));
+    const show = !suppressedByBloc.has(name) && labelThresholdsOk(name, total, area);
+    let label = gLabels.selectAll('text.num').filter((d) => d === feature);
+    if (!show) { label.remove(); return; }
+    const [cx, cy] = labelPosition(feature);
+    const fontSize = labelFontSize(area);
+    const isNew = label.empty();
+    if (isNew) {
+      label = gLabels.append('text').attr('class', 'num').datum(feature)
+        .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+        .attr('font-family', "'Arial Black', Helvetica, Arial, sans-serif")
+        .attr('font-weight', 900).attr('fill', '#f5f1e8')
+        .attr('stroke-width', 3).attr('paint-order', 'stroke');
+    }
+    // Outline matches the country's own current shade instead of a fixed dark colour, so the
+    // number blends into its land rather than sitting on top of it as a separate UI element.
+    label.attr('x', cx).attr('y', cy).attr('font-size', fontSize).attr('stroke', shade);
+
+    const delta = total - prevTotal;
+    if (animate && !isNew && delta > 0) {
+      // "26 -> +3 -> 29": pulse the number itself counting up to the new total, plus a "+n" badge
+      // (see showDelta) rising and fading above it — the only "something just happened here"
+      // animation now; nothing flies in from off-map anymore.
+      label.interrupt()
+        .transition().duration(90).attr('font-size', fontSize * 1.35)
+        .transition().duration(280).ease(d3.easeCubicOut).attr('font-size', fontSize)
+        .tween('text', function () {
+          const node = this;
+          const i = d3.interpolateRound(prevTotal, total);
+          return (t) => { node.textContent = i(t).toLocaleString(); };
+        });
+      showDelta(cx, cy, fontSize, delta);
+    } else {
+      label.text(total.toLocaleString());
+    }
+  }
+
+  // "+n" plus a small king/queen (matching the current All/Women filter), rising and fading above
+  // whatever point on the map just changed. Shared between country and bloc labels so both react
+  // to a change in the same visual language.
+  function showDelta(cx, cy, fontSize, delta) {
+    const deltaG = gLabels.append('g').attr('class', 'delta')
+      .attr('transform', `translate(${cx},${cy - fontSize * 0.9})`);
+    deltaG.append('text')
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+      .attr('font-family', "'Arial Black', Helvetica, Arial, sans-serif").attr('font-weight', 900)
+      .attr('font-size', Math.max(10, fontSize * 0.55))
+      .attr('fill', TREND_COLOR).attr('stroke', '#0c1220').attr('stroke-width', 2).attr('paint-order', 'stroke')
+      .text(`+${delta}`);
+    deltaG.transition().delay(150).duration(650).ease(d3.easeCubicOut)
+      .attr('transform', `translate(${cx},${cy - fontSize * 1.8})`)
+      .style('opacity', 0)
+      .remove();
+  }
+
+  function draw() {
+    sizeSvg();
+    sphere.attr('x', 0).attr('y', 0).attr('width', W).attr('height', H);
+    gLand.selectAll('path').attr('d', path);
+    gBlocs.selectAll('path').attr('d', path);
+    for (const [name, total] of currentTotals) renderCountry(name, total, false);
+    renderBlocs(yearIndex(currentYear), currentYear, false);
+    renderTrendChart();
+  }
+  window.addEventListener('resize', draw);
+
+  const tooltip = document.getElementById('tooltip');
+  // East/West Germany get their own bloc tooltip pre-unification (their federations are only ever
+  // active while the country's own display is suppressed) — so by the time this fires for Germany
+  // itself, folding them into one "Germany" line is always correct, never a loss of information.
+  // Just the current total — no federation-by-federation or heritage breakdown. countryCumAt
+  // already folds in any inherited bloc share, so this is simply "what the map itself shows."
+  function showTooltip(event, name) {
+    const total = countryCumAt(name, yearIndex(currentYear));
+    if (total <= 0) return;
+    tooltip.innerHTML = `<b>${name}: ${total.toLocaleString()}</b>`;
+    tooltip.style.display = 'block';
+    moveTooltip(event);
+  }
+  // Same idea, for the dissolved-federation overlays (USSR etc) — they sit on top of their member
+  // countries with their own pointer events now, so hovering the bloc itself shows the bloc's own
+  // total instead of falling through to whatever's underneath.
+  function showBlocTooltip(event, def) {
+    const total = blocCumAt(def, yearIndex(currentYear));
+    if (total <= 0) return;
+    tooltip.innerHTML = `<b>${def.label}: ${total.toLocaleString()}</b>`;
+    tooltip.style.display = 'block';
+    moveTooltip(event);
+  }
+  function moveTooltip(event) {
+    const gw = globeWrap.getBoundingClientRect();
+    tooltip.style.left = (event.clientX - gw.left + 14) + 'px';
+    tooltip.style.top = (event.clientY - gw.top + 14) + 'px';
+  }
+  function hideTooltip() { tooltip.style.display = 'none'; }
+
+  // ---- state ----
+  const yearLabel = document.getElementById('yearLabel');
+  const slider = document.getElementById('yearSlider');
+  let currentYear = years[0];
+  let selectedCountry = null;
+
+  // Trend chart: a single total line, gold to match the map's existing "growth" colour language
+  // (the same gold the "+3" pulse uses). Clicking a country overlays its own cumulative line
+  // directly on the same axis — not stacked against the total, just its own honest curve.
+  const chartX = d3.scaleLinear().domain([years[0], years[years.length - 1]]);
+  const chartY = d3.scaleLinear();
+  function totalSeriesForMode() { return vizMode === 'FEMALE' ? total_cumulative_F : total_cumulative; }
+  const lineGen = d3.line().x((d) => chartX(d.year)).y((d) => chartY(d.value)).curve(d3.curveMonotoneX);
+  const areaGen = d3.area().x((d) => chartX(d.year)).y0(() => chartY(0)).y1((d) => chartY(d.value)).curve(d3.curveMonotoneX);
+
+  // The slider now lives on its own full-width row below the map (no play button or mode toggle
+  // sharing it any more), so its natural bounding box already spans edge-to-edge with the map —
+  // this just bridges that DOM measurement into the SVG's own coordinate space.
+  function sliderXRange() {
+    const r = slider.getBoundingClientRect();
+    const gw = globeWrap.getBoundingClientRect();
+    const thumb = 16;
+    return [r.left + thumb / 2 - gw.left, r.left + r.width - thumb / 2 - gw.left];
+  }
+
+  function renderTrendChart() {
+    const totalSeries = totalSeriesForMode();
+    const upToIdx = yearIndex(currentYear);
+    const yrs = years.slice(0, upToIdx + 1);
+    const chartH = H * 0.42;
+    // The badge needs room to sit centred exactly on the line's own endpoint without either ever
+    // touching the map's true edges — rather than clamping the badge separately from the line (the
+    // two would then visibly disagree), the whole chart's floor/ceiling AND left/right bounds are
+    // inset by the same margin, so the line itself never reaches year-one's true zero-pixel, the
+    // final year's true right edge, or the top of its own band, and the badge can just always sit
+    // exactly on the tip without ever being cropped by the map's edge.
+    const margin = ICON_SIZE * 0.66 + 10;
+    const [xL, xR] = sliderXRange();
+    chartX.range([xL + margin, xR - margin]);
+    chartY.domain([0, totalSeries[totalSeries.length - 1]]).range([chartH - margin, margin]);
+    const g = `translate(0,${H - chartH})`;
+
+    const totalRows = yrs.map((yr, i) => ({ year: yr, value: totalSeries[i] }));
+    const totalPath = lineGen(totalRows);
+    totalArea.attr('transform', g).attr('d', areaGen(totalRows));
+    totalLineCasing.attr('transform', g).attr('d', totalPath);
+    totalLine.attr('transform', g).attr('d', totalPath);
+
+    if (selectedCountry) {
+      const rows = yrs.map((yr, i) => ({ year: yr, value: countryCumAt(selectedCountry, i) }));
+      const countryPath = lineGen(rows);
+      countryLineCasing.attr('transform', g).attr('d', countryPath).style('display', null);
+      countryLine.attr('transform', g).attr('d', countryPath).style('display', null);
+    } else {
+      countryLineCasing.style('display', 'none');
+      countryLine.style('display', 'none');
+    }
+
+    // Badge + label ride the line's actual current-year point exactly — both axes, not just
+    // height. Pinning x to the track's fixed right edge was only correct when scrubbed all the way
+    // to 2026; scrubbed anywhere earlier, the curve's real end is mid-track and both need to follow
+    // it horizontally too, the same way a tracked-value counter follows its point in both
+    // directions, not just up and down.
+    // Position is set instantly, every render — no transition. A fast slider drag fires this many
+    // times a second; easing the badge toward each new spot meant it was always animating one or
+    // two positions behind the line, which had no transition of its own and just snapped. Only the
+    // digit count-up still eases, since that's not a spatial mismatch the eye catches the same way.
+    const total = totalSeries[upToIdx];
+    const iconX = chartX(currentYear);
+    const iconY = H - chartH + chartY(total);
+    const suffix = vizMode === 'FEMALE' ? 'female GMs' : 'GMs';
+    totalIconBadge.interrupt().attr('cx', iconX).attr('cy', iconY);
+    totalKing.interrupt().attr('href', vizMode === 'FEMALE' ? '#piece-queen' : '#piece-king')
+      .attr('x', iconX - ICON_SIZE / 2).attr('y', iconY - ICON_SIZE / 2);
+    // Beside the badge, same height, rather than above it — stays legible against whatever's
+    // underneath at every year instead of floating above the chart band. Flips to whichever side
+    // has room, so it's never the side that runs off the map's edge (the badge sits hard against
+    // the right edge at 2026, the left edge at year one).
+    const labelGap = ICON_SIZE / 2 + 10;
+    const labelOnRight = (W - iconX) > (iconX);
+    chartTotalLabel.attr('text-anchor', labelOnRight ? 'start' : 'end')
+      .attr('x', iconX + (labelOnRight ? labelGap : -labelGap)).attr('y', iconY)
+      .interrupt()
+      .transition().duration(220).ease(d3.easeCubicOut)
+      .tween('text', function () {
+        const node = this;
+        const start = parseInt((node.textContent || '0').replace(/[^0-9]/g, ''), 10) || 0;
+        const i = d3.interpolateRound(start, total);
+        return (t) => { node.textContent = `${i(t).toLocaleString()} ${suffix}`; };
+      });
+  }
+
+  function resetToYear(year) {
+    updateSuppressedByBloc(year);
+    const yIdx = yearIndex(year);
+    for (const name of countryFeds.keys()) renderCountry(name, countryCumAt(name, yIdx), false);
+    renderBlocs(yIdx, year, false);
+    raiseBiggestLabels();
+    yearLabel.textContent = year;
+    currentYear = year;
+    renderTrendChart();
+  }
+
+  // Every country/bloc whose own number actually changes this step gets its "+n" delta badge (see
+  // renderCountry) — no separate flight animation, the badge popping up at the country itself is
+  // the whole effect now.
+  function advanceTo(year) {
+    if (year < currentYear) { resetToYear(year); return; }
+    const touched = new Set();
+    for (let y = currentYear + 1; y <= year; y++) {
+      for (const fed of Object.keys(federations_new_by_year)) {
+        const n = federations_new_by_year[fed][String(y)];
+        if (!n) continue;
+        const country = federation_country[fed];
+        if (country) touched.add(country);
+      }
+      // A bloc's handoff lands the year after it dissolves — make sure every successor that just
+      // inherited a share gets its delta-pulse too, so the reallocation is visible, not a silent
+      // jump on the next scrub.
+      for (const def of BLOC_DEFS) {
+        if (y === def.until + 1) for (const m of def.members) touched.add(m);
+      }
+    }
+    updateSuppressedByBloc(year);
+    const yIdx = yearIndex(year);
+    for (const name of touched) renderCountry(name, countryCumAt(name, yIdx), true);
+    renderBlocs(yIdx, year, true);
+    raiseBiggestLabels();
+    yearLabel.textContent = year;
+    currentYear = year;
+    renderTrendChart();
+  }
+
+  slider.addEventListener('input', () => advanceTo(+slider.value));
+
+  function setMode(mode) {
+    if (vizMode === mode) return;
+    vizMode = mode;
+    maxEverCount = computeMaxEverCount();
+    document.querySelectorAll('.modeBtn').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+    resetToYear(currentYear);
+  }
+  document.getElementById('modeToggle').addEventListener('click', (event) => {
+    const btn = event.target.closest('.modeBtn');
+    if (btn) setMode(btn.dataset.mode);
+  });
+  if (new URLSearchParams(location.search).get('mode') === 'FEMALE') setMode('FEMALE');
+
+  draw();
+  const qsYear = +new URLSearchParams(location.search).get('year');
+  const startYear = qsYear >= 1950 && qsYear <= 2026 ? qsYear : 1950;
+  slider.value = startYear;
+  resetToYear(startYear);
+
+  let playing = false, timer = null;
+  document.getElementById('playBtn').addEventListener('click', () => {
+    playing = !playing;
+    document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
+    if (playing) {
+      timer = setInterval(() => {
+        let y = currentYear + 1;
+        if (y > years[years.length - 1]) y = years[0];
+        slider.value = y;
+        advanceTo(y);
+      }, 650);
+    } else {
+      clearInterval(timer);
+    }
+  });
+});
+</script>
