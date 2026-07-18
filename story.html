@@ -76,6 +76,7 @@
 
 <script>
 (function() {
+  const storyStage = document.getElementById('storyStage');
   const stickyStage = document.getElementById('stickyStage');
   const steps = document.getElementById('steps');
   const stage = document.getElementById('stage');
@@ -289,6 +290,18 @@
       render(+s.dataset.count);
     }
 
+    // position:sticky always takes about one box-height of scroll to release, and during
+    // that release the top of the grid scrolls away first while the caption (anchored to
+    // the box's bottom) lingers — reading as the visualization tearing apart / spilling
+    // past its own caption. Fade the whole stage out just before release begins so it's
+    // already invisible by the time that would happen, dissolving into the credit line.
+    const RELEASE_FADE_PX = 260;
+    function updateEndFade() {
+      const distanceToRelease = storyStage.getBoundingClientRect().bottom - window.innerHeight;
+      const opacity = Math.max(0, Math.min(1, distanceToRelease / RELEASE_FADE_PX));
+      stickyStage.style.opacity = opacity;
+    }
+
     function onScroll() {
       const stageRect = stickyStage.getBoundingClientRect();
       const centerY = stageRect.top + stageRect.height * 0.55;
@@ -298,6 +311,7 @@
         if (r.top <= centerY) idx = i;
       }
       setActive(idx);
+      updateEndFade();
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -311,6 +325,7 @@
       // own aspect ratio, so pick a fresh shape for it rather than squeezing the old one in.
       grid = makeStableGrid();
       render(+stepEls[activeStep].dataset.count);
+      updateEndFade();
     });
   }
 })();
