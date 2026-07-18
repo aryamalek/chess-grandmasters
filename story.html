@@ -46,9 +46,26 @@
 
   .credit { max-width: 640px; margin: 0 auto; padding: 40px 24px 80px; font-size: 13px; color: rgba(255,255,255,0.45); }
   .credit a { color: rgba(255,255,255,0.65); }
+
+  #gmTooltip {
+    position: fixed; z-index: 10; pointer-events: none;
+    background: #17191f; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+    padding: 8px 11px; box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+    opacity: 0; transform: translate(-50%, -100%) translateY(-10px);
+    transition: opacity 140ms ease, transform 140ms ease;
+    white-space: nowrap;
+  }
+  #gmTooltip.visible { opacity: 1; transform: translate(-50%, -100%) translateY(-14px); }
+  /* flips below the circle when there's no room above it (e.g. the top row) */
+  #gmTooltip.below { transform: translate(-50%, 0) translateY(10px); }
+  #gmTooltip.below.visible { transform: translate(-50%, 0) translateY(14px); }
+  #gmTooltip .name { font-size: 13px; font-weight: 600; color: #fff; }
+  #gmTooltip .meta { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
 </style>
 </head>
 <body>
+
+<div id="gmTooltip"><div class="name"></div><div class="meta"></div></div>
 
 <div id="storyStage">
   <div id="stickyStage">
@@ -83,6 +100,25 @@
   const capEyebrow = document.getElementById('capEyebrow');
   const capBody = document.getElementById('capBody');
   const stepEls = Array.from(document.querySelectorAll('.step'));
+
+  const tooltip = document.getElementById('gmTooltip');
+  const tooltipName = tooltip.querySelector('.name');
+  const tooltipMeta = tooltip.querySelector('.meta');
+  function showTooltip(node, gm) {
+    tooltipName.textContent = gm.name;
+    tooltipMeta.textContent = `${gm.federation} • ${gm.title_year}`;
+    const r = node.getBoundingClientRect();
+    const below = r.top < 70; // not enough room above near the top edge — flip it under the circle instead
+    tooltip.classList.toggle('below', below);
+    // measure after the text is set (opacity:0 still lays out normally) so we can keep
+    // the box fully on-screen for circles near the left/right edge too.
+    const half = tooltip.offsetWidth / 2;
+    const cx = Math.max(half + 8, Math.min(window.innerWidth - half - 8, r.left + r.width / 2));
+    tooltip.style.left = cx + 'px';
+    tooltip.style.top = (below ? r.bottom : r.top) + 'px';
+    tooltip.classList.add('visible');
+  }
+  function hideTooltip() { tooltip.classList.remove('visible'); }
 
   // always full viewport width and height — real phones are already portrait-shaped,
   // so forcing an exact 9:16 box (rather than the device's actual, usually taller,
@@ -198,7 +234,7 @@
       back.style.position='absolute'; back.style.inset='0'; back.style.borderRadius='50%';
       back.style.backfaceVisibility='hidden'; back.style.transform='rotateY(180deg)';
       if (gm.flag) {
-        back.style.backgroundImage=`url(https://flagcdn.com/w80/${gm.flag}.png)`;
+        back.style.backgroundImage=`url(https://flagcdn.com/${gm.flag}.svg)`; // vector, not a fixed-width raster — stays sharp at any circle size
         back.style.backgroundSize='cover'; back.style.backgroundPosition='center';
       } else {
         back.style.background = '#3a3a3f';
@@ -211,6 +247,8 @@
 
       node.dataset.flag = gm.flag || ''; node.dataset.placed = '0';
       node._inner = inner;
+      node.addEventListener('pointerenter', () => showTooltip(node, gm));
+      node.addEventListener('pointerleave', hideTooltip);
       els[i] = node;
       return node;
     }
@@ -312,6 +350,7 @@
       }
       setActive(idx);
       updateEndFade();
+      hideTooltip(); // avoid a stale tooltip if a highlight transition moves the circle out from under a stationary cursor
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
