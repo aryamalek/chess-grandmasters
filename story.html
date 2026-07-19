@@ -38,22 +38,21 @@
     background: rgba(255,255,255,0.08); transition: opacity 300ms ease; opacity: 0;
   }
   #pauseProgressFill { height: 100%; width: 0%; background: #d4af6a; }
-  /* left region: everything from the screen edge to the stat block's left edge — body
-     text is centered WITHIN that region (not the whole dock), so it never sits under
-     or competes with the year/total block on the right. */
+  /* left region: the year, anchored to the dock's left edge. */
+  #capYear {
+    flex: 0 0 auto; transition: opacity 260ms ease;
+    font-size: clamp(22px, 1.1vw + 16px, 42px); font-weight: 700; letter-spacing: 0.01em; color: #d4af6a;
+    line-height: 1; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  /* middle region: body text, centered between the year (left) and stat block (right). */
   #capTextArea { flex: 1 1 auto; min-width: 0; text-align: center; }
   #capBody {
     font-size: clamp(17px, 1.3vw + 11.9px, 38px); line-height: 1.4; color: rgba(255,255,255,0.92); width: 100%;
     text-wrap: balance; transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
-  /* right region: year + running total, both big and prominent — the total is the
-     larger of the two (it's the number that keeps growing, the real payoff of scrubbing). */
+  /* right region: the running total — anchored to the dock's right edge. */
   #capStat { flex: 0 0 auto; text-align: right; transition: opacity 260ms ease; }
-  #capYear {
-    font-size: clamp(22px, 1.1vw + 16px, 42px); font-weight: 700; letter-spacing: 0.01em; color: #d4af6a;
-    line-height: 1; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
-  }
   #capTotal {
     font-size: clamp(32px, 2.3vw + 20px, 72px); font-weight: 800; color: #fff; line-height: 1;
     margin-top: clamp(4px, 0.5vw + 2px, 10px); font-variant-numeric: tabular-nums;
@@ -76,7 +75,7 @@
      both centered, matching how this used to lay out before the stat block existed. */
   @media (max-width: 640px) {
     #captionDock { flex-direction: column; height: auto; min-height: clamp(210px, 30vw + 130px, 260px); gap: clamp(10px, 2vw, 18px); }
-    #capTextArea, #capStat { text-align: center; }
+    #capYear, #capTextArea, #capStat { text-align: center; }
   }
 
   #steps { position: relative; margin-top: -100vh; pointer-events: none; } /* JS sets both this and its own height — it's the scroll track */
@@ -111,11 +110,11 @@
       <div id="pauseProgress">
         <div id="pauseProgressFill"></div>
       </div>
+      <div id="capYear"></div>
       <div id="capTextArea">
         <div id="capBody"></div>
       </div>
       <div id="capStat">
-        <div id="capYear"></div>
         <div id="capTotal"></div>
         <div id="capTotalLabel">Grandmasters</div>
         <div id="capGap"></div>
@@ -154,7 +153,7 @@
     { year: 1950, hl: '', eyebrow: '1950', date: '1950-07-27',
       body: "FIDE creates the Grandmaster title. 27 players become grandmasters at once." },
     { year: 1950, person: 'Bronstein, David', eyebrow: '1950', date: '1950-07-27',
-      body: "David Bronstein, 26 years old — the youngest of the founding 27." },
+      body: "At 26 years old, David Bronstein is the youngest of the group." },
     { year: 1952, person: 'Petrosian, Tigran', eyebrow: '1952', date: '1952-10-21',
       body: "Tigran Petrosian takes the record at 23 — 3 years younger, 2 years and 2 months later." },
     { year: 1955, person: 'Spassky, Boris V.', eyebrow: '1955', date: '1955-09-21',
@@ -221,6 +220,31 @@
     let lo = 0, hi = GM.length;
     while (lo < hi) { const mid = (lo+hi)>>1; if (+GM[mid].title_year <= year) lo = mid+1; else hi = mid; }
     return lo;
+  }
+
+  // how many circles are on screen once we're AT a given pause. For a `person` pause this
+  // is that person's own row index in GM (so they're the LAST circle shown, not buried
+  // partway through the rest of their year's cohort) — countUpToYear(p.year) would include
+  // everyone else who also got the title that year, whether or not they'd chronologically
+  // "arrived" yet relative to this specific record. Clamped to never drop below the
+  // previous pause's count (the founding 27 and Bronstein share one date/count; a person's
+  // own index is never allowed to look like a step backward in the reveal).
+  function computePauseCounts(GM) {
+    const counts = [];
+    let prev = 0;
+    for (let i = 0; i < PAUSES.length; i++) {
+      const p = PAUSES[i];
+      let raw;
+      if (p.person) {
+        const idx = GM.findIndex(g => g.name === p.person);
+        raw = idx >= 0 ? idx + 1 : countUpToYear(GM, p.year);
+      } else {
+        raw = countUpToYear(GM, p.year);
+      }
+      prev = Math.max(raw, prev);
+      counts.push(prev);
+    }
+    return counts;
   }
 
   // calendar-accurate (not a 30-day-month approximation) years+months between two dates —
@@ -326,6 +350,7 @@
   });
 
   function init(GM) {
+    const pauseCounts = computePauseCounts(GM);
     const els = [];
     let highlight = ''; // flag-based group highlight (e.g. a whole country)
     let highlightPersons = new Set(); // every individual highlighted SO FAR stays highlighted, not just the current one
@@ -503,7 +528,7 @@
     // appear together; the slider then just tracks how far through this beat you are.
     function updatePause(p, index, progress, isNewZone) {
       if (isNewZone) {
-        const count = countUpToYear(GM, p.year);
+        const count = pauseCounts[index];
         scrubbing = false;
         highlight = p.hl || '';
         maxIndexReached = Math.max(maxIndexReached, index);
@@ -513,7 +538,7 @@
         capYear.textContent = p.eyebrow;
         capTotal.textContent = count.toLocaleString();
         capBody.textContent = p.body;
-        capStat.style.opacity = '1'; capBody.style.opacity = '1';
+        capYear.style.opacity = '1'; capStat.style.opacity = '1'; capBody.style.opacity = '1';
         capGap.style.opacity = '0';
       }
 
@@ -525,12 +550,15 @@
     // scroll position directly, no timers, no eased transition (the scroll IS the motion).
     function updateGrowth(fromP, toP, t, fromIndex) {
       const year = Math.round(fromP.year + (toP.year - fromP.year) * t);
-      const count = countUpToYear(GM, year);
+      // interpolated directly between the two pauses' own counts (not re-derived from
+      // `year`) so a growth zone leading into a person pause never overshoots past them —
+      // any cohort stragglers get swept up in the NEXT growth zone instead.
+      const count = Math.round(pauseCounts[fromIndex] + (pauseCounts[fromIndex+1] - pauseCounts[fromIndex]) * t);
       scrubbing = true;
       highlight = '';
       maxIndexReached = Math.max(maxIndexReached, fromIndex);
       highlightPersons = personsUpToIndex(maxIndexReached); // already-revealed record-holders stay lit through the scrub too
-      capStat.style.opacity = '1';
+      capYear.style.opacity = '1'; capStat.style.opacity = '1';
       capYear.textContent = String(year);
       capTotal.textContent = count.toLocaleString();
       render(count);
@@ -589,9 +617,9 @@
     function renderInitialGrey() {
       scrubbing = false;
       highlight = ''; highlightPersons = new Set(); maxIndexReached = -1;
-      capStat.style.opacity = '0'; capBody.style.opacity = '0'; capGap.style.opacity = '0';
+      capYear.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0'; capGap.style.opacity = '0';
       pauseProgress.style.opacity = '0'; pauseProgressFill.style.width = '0%';
-      render(countUpToYear(GM, PAUSES[0].year));
+      render(pauseCounts[0]);
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -608,12 +636,11 @@
       if (zone.type === 'pause') {
         const p = PAUSES[zone.index];
         highlight = p.hl || ''; highlightPersons = personsUpToIndex(maxIndexReached);
-        render(countUpToYear(GM, p.year), true);
+        render(pauseCounts[zone.index], true);
       } else {
-        const fromP = PAUSES[zone.from], toP = PAUSES[zone.to];
-        const year = Math.round(fromP.year + (toP.year - fromP.year) * zone.t);
         highlight = ''; highlightPersons = personsUpToIndex(maxIndexReached);
-        render(countUpToYear(GM, year), true);
+        const count = Math.round(pauseCounts[zone.from] + (pauseCounts[zone.from+1] - pauseCounts[zone.from]) * zone.t);
+        render(count, true);
       }
       updateEndFade();
     });
