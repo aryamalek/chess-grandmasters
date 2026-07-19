@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Grandmasters — a scrollable history</title>
+<title>The Grandmasters: a scrollable history</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
@@ -62,14 +62,6 @@
     font-size: clamp(9px, 0.25vw + 8px, 12px); letter-spacing: 0.1em; text-transform: uppercase;
     color: rgba(255,255,255,0.4); margin-top: clamp(3px, 0.2vw + 2px, 6px);
   }
-  /* only shown while scrubbing through a growth zone — ticks up from 0 toward the full
-     gap since the last record, then hides the instant the next pause/highlight fires. */
-  #capGap {
-    font-size: clamp(11px, 0.3vw + 9px, 14px); color: rgba(212,175,106,0.85);
-    margin-top: clamp(8px, 0.6vw + 4px, 14px); transition: opacity 260ms ease; opacity: 0;
-    font-variant-numeric: tabular-nums;
-  }
-
   /* below this width the side-by-side split doesn't leave body text enough room to
      wrap without overflowing the dock — stack text above the stat block instead,
      both centered, matching how this used to lay out before the stat block existed. */
@@ -117,7 +109,6 @@
       <div id="capStat">
         <div id="capTotal"></div>
         <div id="capTotalLabel">Grandmasters</div>
-        <div id="capGap"></div>
       </div>
     </div>
   </div>
@@ -137,15 +128,13 @@
   const capYear = document.getElementById('capYear');
   const capTotal = document.getElementById('capTotal');
   const capBody = document.getElementById('capBody');
-  const capGap = document.getElementById('capGap');
 
   const pauseProgress = document.getElementById('pauseProgress');
   const pauseProgressFill = document.getElementById('pauseProgressFill');
 
   // Timeline: the youngest-grandmaster-ever record, start to present. `person` highlights
-  // one specific circle by name (not a whole country); `growthNote` shows a caption during
-  // the scrub leading INTO a pause, for the two long stretches where the record just holds.
-  // `year` is our dataset's title year (so the highlighted circle actually exists yet) —
+  // one specific circle by name (not a whole country). `year` is our dataset's title year
+  // (so the highlighted circle actually exists yet) —
   // it sometimes lags the real record date by a year (FIDE's official conferral vs. the
   // norm-completion date). `date` is that real record date, day-level where sourced,
   // used only to drive the ticking "time since last record" stat between pauses.
@@ -161,8 +150,7 @@
     { year: 1958, person: 'Fischer, Robert James', eyebrow: '1958', date: '1958-09-10',
       body: "At 15 years and 185 days, Bobby Fischer sets a new record." },
     { year: 1992, person: 'Polgar, Judit', eyebrow: '1992', date: '1991-12-21',
-      growthNote: "33 years and 3 months pass. No one gets closer to Fischer's record.",
-      body: "After 33 years — the longest wait yet — Judit Polgar finally beats it, at 15 years and 151 days." },
+      body: "The longest wait yet: 33 years. Then Judit Polgar finally beats it, at 15 years and 151 days." },
     { year: 1994, person: 'Leko, Peter', eyebrow: '1994', date: '1994-01-30',
       body: "Péter Lékó takes it to 14 years and 144 days." },
     { year: 1997, person: 'Bacrot, Étienne', eyebrow: '1997', date: '1997-03-22',
@@ -170,12 +158,11 @@
     { year: 1998, person: 'Ponomariov, Ruslan', eyebrow: '1998', date: '1997-10-28',
       body: "Ruslan Ponomariov brings it down to 14 years and 17 days." },
     { year: 2000, person: 'Bu Xiangzhi', eyebrow: '2000', date: '1999-10-23',
-      body: "Bu Xiangzhi is the first to break it before turning 14 — 13 years and 317 days old." },
+      body: "Bu Xiangzhi is the first to break it before turning 14, at 13 years and 317 days old." },
     { year: 2003, person: 'Karjakin, Sergey', eyebrow: '2003', date: '2002-08-20',
       body: "Sergey Karjakin sets the record at 12 years and 220 days." },
     { year: 2021, person: 'Mishra, Abhimanyu', eyebrow: '2021', date: '2021-06-30',
-      growthNote: "18 years and 10 months pass. Karjakin's record still stands.",
-      body: "After nearly 19 years — the second-longest wait in the story — Abhimanyu Mishra finally beats it, at 12 years and 145 days." },
+      body: "The second-longest wait yet: nearly 19 years. Then Abhimanyu Mishra finally beats it, at 12 years and 145 days." },
     { year: 2026, hl: '', eyebrow: '2026', date: '2026-07-19',
       body: "2,143 grandmasters across 92 countries. Mishra's record has now stood for five years." },
   ];
@@ -539,7 +526,6 @@
         capTotal.textContent = count.toLocaleString();
         capBody.textContent = p.body;
         capYear.style.opacity = '1'; capStat.style.opacity = '1'; capBody.style.opacity = '1';
-        capGap.style.opacity = '0';
       }
 
       pauseProgress.style.opacity = '1';
@@ -566,21 +552,13 @@
 
       // ticks up from 0 toward the full gap as you scrub through this growth zone, by
       // interpolating real calendar time (not just the CSV year) between the two records.
+      // This IS the main center text for every growth stretch, not a side note — there's
+      // always something live to read while travelling, not just count/year ticking past.
       const fromDate = new Date(fromP.date), toDate = new Date(toP.date);
       const curDate = new Date(fromDate.getTime() + (toDate.getTime() - fromDate.getTime()) * t);
       const { years, months } = ymBetween(fromDate, curDate);
-      capGap.textContent = formatGap(years, months) + ' since ' + shortLabel(fromP);
-      capGap.style.opacity = '1';
-
-      // most growth stretches are silent (just the count ticking), but a few are long
-      // enough that the silence itself is the point — those get their own caption,
-      // named on the pause they're leading into.
-      if (toP.growthNote) {
-        capBody.textContent = toP.growthNote;
-        capBody.style.opacity = '1';
-      } else {
-        capBody.style.opacity = '0';
-      }
+      capBody.textContent = formatGap(years, months) + ' since ' + shortLabel(fromP);
+      capBody.style.opacity = '1';
     }
 
     // position:sticky always takes about one box-height of scroll to release, and during
@@ -617,7 +595,7 @@
     function renderInitialGrey() {
       scrubbing = false;
       highlight = ''; highlightPersons = new Set(); maxIndexReached = -1;
-      capYear.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0'; capGap.style.opacity = '0';
+      capYear.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0';
       pauseProgress.style.opacity = '0'; pauseProgressFill.style.width = '0%';
       render(pauseCounts[0]);
     }
