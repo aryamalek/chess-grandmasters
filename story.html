@@ -307,14 +307,18 @@
       // size cells off the bounding box actually used by the current n (not the grid's
       // lifetime-max cols/rows) so scrolling back to a lower count rescales up correctly.
       const cols = maxCol + 1, rows = maxRow + 1;
-      const cell = Math.min(W/cols, H/rows);
+      // reserve the top/bottom gaps from the height budget BEFORE sizing cells, not after —
+      // sizing first and patching the position afterward can't guarantee both gaps at once
+      // when the grid is height-bound (cell size leaves no slack to carve a gap out of).
+      // Insets scale with a first-pass cell estimate but never shrink below a fixed floor,
+      // so the gap stays visible even with hundreds of tiny circles.
+      const cellEstimate = Math.min(W/cols, H/rows);
+      const topInset = Math.max(12, cellEstimate * 0.18);
+      const bottomGap = Math.max(12, cellEstimate * 0.18);
+      const Hgrid = Math.max(0, H - topInset - bottomGap);
+      const cell = Math.min(W/cols, Hgrid/rows);
       const r = cell * 0.44;
-      // bottom-anchor the grid, nudge down by the cell/circle padding difference so the
-      // circle edge (not the invisible cell boundary) is what the gap below is measured
-      // from, then back off a bit of breathing room above the caption dock — but never
-      // less than topInset from the very top edge either, so both ends get some bleed.
-      const bottomGap = cell * 0.18, topInset = cell * 0.18;
-      const offX = (W-cols*cell)/2, offY = Math.max(topInset-(cell/2-r), H-rows*cell+(cell/2-r)-bottomGap);
+      const offX = (W-cols*cell)/2, offY = topInset + (Hgrid - rows*cell);
 
       for (let i=0;i<n;i++) {
         const slot = slotsForN[i];
