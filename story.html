@@ -26,24 +26,46 @@
   #captionDock {
     flex: 0 0 auto; height: clamp(172px, 6vw + 150px, 260px);
     box-sizing: border-box; padding: clamp(18px, 0.5vw + 16px, 26px) clamp(22px, 2.6vw + 12px, 64px) clamp(26px, 0.5vw + 24px, 34px);
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    display: flex; flex-direction: row; align-items: center; gap: clamp(24px, 3vw, 56px);
     background: #0a0c12; border-top: 1px solid rgba(255,255,255,0.06);
-    text-align: center;
   }
+  /* left region: everything from the screen edge to the stat block's left edge — body
+     text is centered WITHIN that region (not the whole dock), so it never sits under
+     or competes with the year/total block on the right. */
+  #capTextArea { flex: 1 1 auto; min-width: 0; text-align: center; }
   #capStep {
     font-size: clamp(10px, 0.3vw + 9px, 13px); letter-spacing: 0.12em; text-transform: uppercase;
     color: rgba(255,255,255,0.4); margin-bottom: clamp(6px, 0.3vw + 5px, 9px); transition: opacity 260ms ease;
-    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
-  }
-  #capYear {
-    font-size: clamp(28px, 1.74vw + 21.2px, 56px); font-weight: 700; letter-spacing: 0.01em; color: #d4af6a;
-    line-height: 1.1; margin-bottom: clamp(8px, 0.6vw + 6px, 14px); transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
   #capBody {
     font-size: clamp(17px, 0.68vw + 14.3px, 28px); line-height: 1.45; color: rgba(255,255,255,0.92); width: 100%;
     transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  /* right region: year + running total, both big and prominent — the total is the
+     larger of the two (it's the number that keeps growing, the real payoff of scrubbing). */
+  #capStat { flex: 0 0 auto; text-align: right; transition: opacity 260ms ease; }
+  #capYear {
+    font-size: clamp(22px, 1.1vw + 16px, 42px); font-weight: 700; letter-spacing: 0.01em; color: #d4af6a;
+    line-height: 1; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  #capTotal {
+    font-size: clamp(32px, 2.3vw + 20px, 72px); font-weight: 800; color: #fff; line-height: 1;
+    margin-top: clamp(4px, 0.5vw + 2px, 10px); font-variant-numeric: tabular-nums;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  #capTotalLabel {
+    font-size: clamp(9px, 0.25vw + 8px, 12px); letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); margin-top: clamp(3px, 0.2vw + 2px, 6px);
+  }
+
+  /* below this width the side-by-side split doesn't leave body text enough room to
+     wrap without overflowing the dock — stack text above the stat block instead,
+     both centered, matching how this used to lay out before the stat block existed. */
+  @media (max-width: 640px) {
+    #captionDock { flex-direction: column; height: auto; min-height: clamp(210px, 30vw + 130px, 260px); gap: clamp(10px, 2vw, 18px); }
+    #capTextArea, #capStat { text-align: center; }
   }
 
   #steps { position: relative; margin-top: -100vh; pointer-events: none; } /* JS sets both this and its own height — it's the scroll track */
@@ -75,9 +97,15 @@
   <div id="stickyStage">
     <div id="stage"></div>
     <div id="captionDock">
-      <div id="capStep"></div>
-      <div id="capYear"></div>
-      <div id="capBody"></div>
+      <div id="capTextArea">
+        <div id="capStep"></div>
+        <div id="capBody"></div>
+      </div>
+      <div id="capStat">
+        <div id="capYear"></div>
+        <div id="capTotal"></div>
+        <div id="capTotalLabel">Grandmasters</div>
+      </div>
     </div>
   </div>
 
@@ -93,7 +121,9 @@
   const steps = document.getElementById('steps');
   const stage = document.getElementById('stage');
   const capStep = document.getElementById('capStep');
+  const capStat = document.getElementById('capStat');
   const capYear = document.getElementById('capYear');
+  const capTotal = document.getElementById('capTotal');
   const capBody = document.getElementById('capBody');
 
   // Timeline: PAUSES are the fixed narrative beats (reusing the existing facts/copy).
@@ -105,8 +135,10 @@
       body: "Eleven of the 27 are already Soviet. One country dominates before the rivalry even has a name." },
     { year: 1955, hl: 'ar', eyebrow: '1950–1955',
       body: "Miguel Najdorf is stranded in Argentina in 1939. His family dies in the Holocaust; he stays. By 1955, Argentina has its first homegrown grandmaster." },
+    { year: 2026, hl: '', eyebrow: '1950–2026',
+      body: "From 27 to 2,143. Seven decades of grandmasters, one title at a time." },
   ];
-  const PAUSE_VH = 1.0, YEAR_VH = 0.3, TAIL_VH = 0.4;
+  const PAUSE_VH = 1.0, YEAR_VH = 0.3, TAIL_VH = 1.0;
   // growth scroll is allocated PER YEAR (not as one fixed span for the whole zone), so
   // every individual year gets an equal, guaranteed slice of scroll — a 5-year gap and a
   // 50-year gap both feel equally deliberate, rather than the longer one blurring past.
@@ -388,13 +420,14 @@
       const count = countUpToYear(GM, p.year);
       scrubbing = false;
       highlight = '';
-      capStep.style.opacity = '0'; capYear.style.opacity = '0'; capBody.style.opacity = '0';
+      capStep.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0';
       render(count);
 
       yearTimer = setTimeout(() => {
         capStep.textContent = `${String(index + 1).padStart(2, '0')} / ${String(PAUSES.length).padStart(2, '0')}`;
         capYear.textContent = p.eyebrow;
-        capStep.style.opacity = '1'; capYear.style.opacity = '1';
+        capTotal.textContent = count.toLocaleString();
+        capStep.style.opacity = '1'; capStat.style.opacity = '1';
       }, 650);
 
       highlightTimer = setTimeout(() => {
@@ -405,16 +438,19 @@
       }, 1450);
     }
 
-    // continuous scroll-scrubbing between two pauses: year and count track the scroll
-    // position directly, no timers, no eased transition (the scroll gesture IS the motion).
+    // continuous scroll-scrubbing between two pauses: year and running total track the
+    // scroll position directly, no timers, no eased transition (the scroll IS the motion).
     function updateGrowth(fromP, toP, t) {
       clearTimeout(yearTimer); clearTimeout(highlightTimer);
       const year = Math.round(fromP.year + (toP.year - fromP.year) * t);
+      const count = countUpToYear(GM, year);
       scrubbing = true;
       highlight = '';
       capStep.style.opacity = '0'; capBody.style.opacity = '0';
-      capYear.style.opacity = '1'; capYear.textContent = String(year);
-      render(countUpToYear(GM, year));
+      capStat.style.opacity = '1';
+      capYear.textContent = String(year);
+      capTotal.textContent = count.toLocaleString();
+      render(count);
     }
 
     // position:sticky always takes about one box-height of scroll to release, and during
