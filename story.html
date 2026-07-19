@@ -42,14 +42,9 @@
      text is centered WITHIN that region (not the whole dock), so it never sits under
      or competes with the year/total block on the right. */
   #capTextArea { flex: 1 1 auto; min-width: 0; text-align: center; }
-  #capStep {
-    font-size: clamp(10px, 0.3vw + 9px, 13px); letter-spacing: 0.12em; text-transform: uppercase;
-    color: rgba(255,255,255,0.4); margin-bottom: clamp(6px, 0.3vw + 5px, 9px); transition: opacity 260ms ease;
-    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
-  }
   #capBody {
-    font-size: clamp(17px, 0.68vw + 14.3px, 28px); line-height: 1.45; color: rgba(255,255,255,0.92); width: 100%;
-    transition: opacity 260ms ease;
+    font-size: clamp(17px, 1.3vw + 11.9px, 38px); line-height: 1.4; color: rgba(255,255,255,0.92); width: 100%;
+    text-wrap: balance; transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
   /* right region: year + running total, both big and prominent — the total is the
@@ -110,7 +105,6 @@
         <div id="pauseProgressFill"></div>
       </div>
       <div id="capTextArea">
-        <div id="capStep"></div>
         <div id="capBody"></div>
       </div>
       <div id="capStat">
@@ -132,7 +126,6 @@
   const stickyStage = document.getElementById('stickyStage');
   const steps = document.getElementById('steps');
   const stage = document.getElementById('stage');
-  const capStep = document.getElementById('capStep');
   const capStat = document.getElementById('capStat');
   const capYear = document.getElementById('capYear');
   const capTotal = document.getElementById('capTotal');
@@ -481,11 +474,10 @@
         highlight = p.hl;
         render(count);
 
-        capStep.textContent = `${String(index + 1).padStart(2, '0')} / ${String(PAUSES.length).padStart(2, '0')}`;
         capYear.textContent = p.eyebrow;
         capTotal.textContent = count.toLocaleString();
         capBody.textContent = p.body;
-        capStep.style.opacity = '1'; capStat.style.opacity = '1'; capBody.style.opacity = '1';
+        capStat.style.opacity = '1'; capBody.style.opacity = '1';
       }
 
       pauseProgress.style.opacity = '1';
@@ -499,7 +491,7 @@
       const count = countUpToYear(GM, year);
       scrubbing = true;
       highlight = '';
-      capStep.style.opacity = '0'; capBody.style.opacity = '0';
+      capBody.style.opacity = '0';
       capStat.style.opacity = '1';
       capYear.textContent = String(year);
       capTotal.textContent = count.toLocaleString();
@@ -541,7 +533,7 @@
     function renderInitialGrey() {
       scrubbing = false;
       highlight = '';
-      capStep.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0';
+      capStat.style.opacity = '0'; capBody.style.opacity = '0';
       pauseProgress.style.opacity = '0'; pauseProgressFill.style.width = '0%';
       render(countUpToYear(GM, PAUSES[0].year));
     }
