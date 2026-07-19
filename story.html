@@ -345,10 +345,25 @@
       node._inner.style.transform = isHl ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
       if (node.dataset.placed === '0') {
-        node.style.transition = scrubbing ? 'none' : 'opacity 240ms ease-out';
-        node.style.transitionDelay = '0ms';
-        node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
-        if (scrubbing) { node.style.opacity = '1'; } else { requestAnimationFrame(() => { node.style.opacity = '1'; }); }
+        const finalTransform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+        if (scrubbing) {
+          // new circles still get a quick fade+grow entrance even while scrubbing —
+          // only THEIR pop-in animates; existing circles keep tracking the scroll
+          // position instantly, so this doesn't introduce any lag relative to scroll.
+          node.style.transition = 'none';
+          node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale * 0.55})`;
+          node.style.opacity = '0';
+          requestAnimationFrame(() => {
+            node.style.transition = 'transform 240ms ease-out, opacity 240ms ease-out';
+            node.style.transform = finalTransform;
+            node.style.opacity = '1';
+          });
+        } else {
+          node.style.transition = 'opacity 240ms ease-out';
+          node.style.transitionDelay = '0ms';
+          node.style.transform = finalTransform;
+          requestAnimationFrame(() => { node.style.opacity = '1'; });
+        }
         node.dataset.placed = '1';
       } else if (scrubbing) {
         node.style.transition = 'none';
