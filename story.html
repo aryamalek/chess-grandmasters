@@ -66,8 +66,16 @@
      wrap without overflowing the dock — stack text above the stat block instead,
      both centered, matching how this used to lay out before the stat block existed. */
   @media (max-width: 640px) {
-    #captionDock { flex-direction: column; height: auto; min-height: clamp(210px, 30vw + 130px, 260px); gap: clamp(10px, 2vw, 18px); }
+    /* #capTextArea's flex:1 1 auto (below) is meant for the desktop ROW layout, where it
+       grows to fill horizontal space between the year and stat blocks. Once flex-direction
+       flips to column here, that same rule makes it grow to fill leftover VERTICAL space
+       instead — stretching the text block and shoving the grandmaster count down the page
+       with a big empty gap. Pin it to its content height and center the group as a whole
+       within the dock instead, so the min-height keeps the dock from jumping in height as
+       captions change length without leaving a gap between the elements themselves. */
+    #captionDock { flex-direction: column; height: auto; min-height: clamp(210px, 30vw + 130px, 260px); gap: clamp(10px, 2vw, 18px); justify-content: center; }
     #capYear, #capTextArea, #capStat { text-align: center; }
+    #capTextArea { flex: 0 0 auto; }
   }
 
   #steps { position: relative; margin-top: -100vh; pointer-events: none; } /* JS sets both this and its own height — it's the scroll track */
