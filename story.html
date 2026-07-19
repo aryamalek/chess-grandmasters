@@ -158,7 +158,10 @@
     const pausePx = h*PAUSE_VH;
     let cursor = 0;
     for (let i = 0; i < PAUSES.length; i++) {
-      if (scrolled < cursor + pausePx) return { type: 'pause', index: i, key: 'pause-'+i };
+      if (scrolled < cursor + pausePx) {
+        const progress = Math.max(0, Math.min(1, (scrolled-cursor)/pausePx));
+        return { type: 'pause', index: i, key: 'pause-'+i, progress };
+      }
       cursor += pausePx;
       if (i < PAUSES.length - 1) {
         const growthPx = growthPxFor(PAUSES[i], PAUSES[i+1]);
@@ -169,7 +172,8 @@
         cursor += growthPx;
       }
     }
-    return { type: 'pause', index: PAUSES.length-1, key: 'pause-'+(PAUSES.length-1) }; // tail: hold on the last pause
+    // tail: hold on the last pause, fully revealed (progress 1)
+    return { type: 'pause', index: PAUSES.length-1, key: 'pause-'+(PAUSES.length-1), progress: 1 };
   }
   function countUpToYear(GM, year) {
     let lo = 0, hi = GM.length;
@@ -451,38 +455,44 @@
     }
 
     let currentKey = null;
-    let yearTimer = null, highlightTimer = null;
+    let pauseHighlightShown = false; // avoids re-rendering every scroll tick when nothing has actually changed
 
-    // entering a pause (for the first time, not just re-scrolling within it) plays the
-    // same grey -> year -> highlight+text reveal as before: grey settles first, then the
-    // year changes, then — after a further pause — the group highlights and text arrives.
-    function enterPause(p, index) {
-      clearTimeout(yearTimer); clearTimeout(highlightTimer);
+    // a pause's grey -> year -> highlight+text reveal is driven directly by scroll
+    // position within the zone (not wall-clock timers) — scroll past a threshold and
+    // that beat appears immediately, at any scroll speed, with no dead space either
+    // before it triggers or after it's already fully revealed.
+    const YEAR_THRESHOLD = 0.22, HIGHLIGHT_THRESHOLD = 0.55;
+    function updatePause(p, index, progress, isNewZone) {
       const count = countUpToYear(GM, p.year);
-      scrubbing = false;
-      highlight = '';
-      capStep.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0';
-      render(count);
+      const showYear = progress >= YEAR_THRESHOLD;
+      const showHighlight = progress >= HIGHLIGHT_THRESHOLD;
 
-      yearTimer = setTimeout(() => {
+      if (isNewZone) {
+        scrubbing = false;
+        highlight = showHighlight ? p.hl : '';
+        render(count);
+        pauseHighlightShown = showHighlight;
+      } else if (showHighlight !== pauseHighlightShown) {
+        // crossed the highlight threshold (forward or backward) since the last tick
+        highlight = showHighlight ? p.hl : '';
+        render(count);
+        pauseHighlightShown = showHighlight;
+      }
+
+      capStep.style.opacity = showYear ? '1' : '0';
+      capStat.style.opacity = showYear ? '1' : '0';
+      if (showYear) {
         capStep.textContent = `${String(index + 1).padStart(2, '0')} / ${String(PAUSES.length).padStart(2, '0')}`;
         capYear.textContent = p.eyebrow;
         capTotal.textContent = count.toLocaleString();
-        capStep.style.opacity = '1'; capStat.style.opacity = '1';
-      }, 650);
-
-      highlightTimer = setTimeout(() => {
-        highlight = p.hl;
-        capBody.textContent = p.body;
-        render(count);
-        capBody.style.opacity = '1';
-      }, 1450);
+      }
+      capBody.style.opacity = showHighlight ? '1' : '0';
+      if (showHighlight) { capBody.textContent = p.body; }
     }
 
     // continuous scroll-scrubbing between two pauses: year and running total track the
     // scroll position directly, no timers, no eased transition (the scroll IS the motion).
     function updateGrowth(fromP, toP, t) {
-      clearTimeout(yearTimer); clearTimeout(highlightTimer);
       const year = Math.round(fromP.year + (toP.year - fromP.year) * t);
       const count = countUpToYear(GM, year);
       scrubbing = true;
@@ -510,7 +520,9 @@
       const scrolled = Math.max(0, Math.min(trackHeightPx(), window.scrollY));
       const zone = computeZone(scrolled);
       if (zone.type === 'pause') {
-        if (zone.key !== currentKey) { currentKey = zone.key; enterPause(PAUSES[zone.index], zone.index); }
+        const isNewZone = zone.key !== currentKey;
+        currentKey = zone.key;
+        updatePause(PAUSES[zone.index], zone.index, zone.progress, isNewZone);
       } else {
         currentKey = zone.key;
         updateGrowth(PAUSES[zone.from], PAUSES[zone.to], zone.t);
