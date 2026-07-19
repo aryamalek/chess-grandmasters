@@ -502,8 +502,19 @@
       hideTooltip(); // avoid a stale tooltip if a highlight transition moves the circle out from under a stationary cursor
     }
 
+    // don't autoplay the first reveal on load — sit on a neutral grey grid until the
+    // user actually scrolls into pause zero's range themselves. If the page loads
+    // already scrolled (e.g. scroll restoration), fall back to the normal scroll-driven
+    // state instead of forcing grey.
+    function renderInitialGrey() {
+      scrubbing = false;
+      highlight = '';
+      capStep.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0';
+      render(countUpToYear(GM, PAUSES[0].year));
+    }
+
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    if (window.scrollY === 0) { renderInitialGrey(); } else { onScroll(); }
     window.addEventListener('resize', () => {
       layoutStage();
       // the stable grid's column/row shape is chosen once and then kept fixed on purpose
