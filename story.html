@@ -284,6 +284,8 @@
     // scroll position 1:1 with no transition lag. False for a pause reveal, where the
     // eased transition is the point (a deliberate one-time animated move, not a scrub).
     let scrubbing = false;
+    let lastCols = 0, lastRows = 0; // detects grid reshapes (a new row/col added) so that
+    // specific moment can get a brief eased transition even while otherwise scrubbing instantly
 
     function ensureEl(i) {
       if (els[i]) return els[i];
@@ -324,7 +326,7 @@
       } else {
         back.style.background = '#3a3a3f';
       }
-      back.style.boxShadow='0 0 0 3px #d4af6a, 0 0 16px 3px rgba(212,175,106,0.5)';
+      back.style.boxShadow='0 0 0 1.5px #ffffff, 0 0 12px 2px rgba(255,255,255,0.35)';
 
       inner.appendChild(front); inner.appendChild(back);
       node.appendChild(inner);
@@ -338,7 +340,7 @@
       return node;
     }
 
-    function place(node, cx, cy, r, delayMs) {
+    function place(node, cx, cy, r, delayMs, reshaped) {
       const scale = (r*2)/BASE;
       const isHl = highlight && node.dataset.flag === highlight;
       node._inner.style.transitionDelay = '0ms';
@@ -373,6 +375,13 @@
           // can fire well before the 240ms fade finishes) — update its target position
           // only, without resetting transition:none, or the fade never gets to play.
           node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+        } else if (reshaped) {
+          // a row/col was just added — every circle resized at once, so smooth THIS
+          // specific move instead of snapping, then drop back to instant tracking.
+          node.style.transition = 'transform 220ms ease-out';
+          node.style.transitionDelay = '0ms';
+          node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+          node.style.opacity = '1';
         } else {
           node.style.transition = 'none';
           node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
@@ -386,7 +395,7 @@
       }
     }
 
-    function render(n) {
+    function render(n, forceInstant) {
       const W = stage.clientWidth;
       const H = stage.clientHeight;
       for (let i=0;i<n;i++) ensureEl(i);
@@ -425,11 +434,17 @@
       const r = cell * 0.44;
       const offX = (W-cols*cell)/2, offY = topInset + (Hgrid - rows*cell);
 
+      // adding a row/col resizes every existing circle at once (a real, if occasional,
+      // structural change) — even while otherwise scrubbing instantly, that specific
+      // moment gets a brief eased transition instead of a jarring simultaneous snap.
+      const reshaped = !forceInstant && (cols !== lastCols || rows !== lastRows);
+      lastCols = cols; lastRows = rows;
+
       for (let i=0;i<n;i++) {
         const slot = slotsForN[i];
         const cx = offX+slot.col*cell+cell/2, cy = offY+slot.row*cell+cell/2;
         const delay = rows > 1 ? Math.min(MAX_STAGGER_MS, (slot.row/Math.max(1,rows-1))*MAX_STAGGER_MS) : 0;
-        place(els[i], cx, cy, r, delay);
+        place(els[i], cx, cy, r, delay, reshaped);
       }
     }
 
@@ -530,12 +545,12 @@
       if (zone.type === 'pause') {
         const p = PAUSES[zone.index];
         highlight = p.hl;
-        render(countUpToYear(GM, p.year));
+        render(countUpToYear(GM, p.year), true);
       } else {
         const fromP = PAUSES[zone.from], toP = PAUSES[zone.to];
         const year = Math.round(fromP.year + (toP.year - fromP.year) * zone.t);
         highlight = '';
-        render(countUpToYear(GM, year));
+        render(countUpToYear(GM, year), true);
       }
       updateEndFade();
     });
