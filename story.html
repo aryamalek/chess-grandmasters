@@ -316,16 +316,22 @@
       const back = document.createElement('div');
       back.style.position='absolute'; back.style.inset='0'; back.style.borderRadius='50%';
       back.style.backfaceVisibility='hidden'; back.style.transform='rotateY(180deg)';
+      // background-size:cover fills the circle edge-to-edge, but a rectangular flag cropped
+      // to a circle loses its CORNERS (not just left/right) — any flag with an off-center
+      // emblem (a canton: US, Australia, NZ, Chile, and historically many others, not just
+      // the USSR) risks having it clipped, and no single background-position fixes that for
+      // every flag at once. 'contain' shows the whole flag with no cropping, guaranteed, at
+      // the cost of a small letterboxed gap above/below — filled with a matching neutral so
+      // it still reads as a clean circular badge rather than a flag floating in empty space.
+      back.style.backgroundColor = '#1c1e24';
       if (gm.flag === 'ussr') {
         back.style.backgroundImage='url(ussr.svg)'; // dissolved 1991 — not on flagcdn, so bundled locally
-        back.style.backgroundSize='cover';
-        back.style.backgroundPosition='17% 25%'; // the emblem sits in the canton, not the center — cover+center would crop it out entirely
       } else if (gm.flag) {
         back.style.backgroundImage=`url(https://flagcdn.com/${gm.flag}.svg)`; // vector, not a fixed-width raster — stays sharp at any circle size
-        back.style.backgroundSize='cover'; back.style.backgroundPosition='center';
       } else {
         back.style.background = '#3a3a3f';
       }
+      if (gm.flag) { back.style.backgroundSize='contain'; back.style.backgroundPosition='center'; back.style.backgroundRepeat='no-repeat'; }
       back.style.boxShadow='0 0 0 1.5px #ffffff, 0 0 12px 2px rgba(255,255,255,0.35)';
 
       inner.appendChild(front); inner.appendChild(back);
