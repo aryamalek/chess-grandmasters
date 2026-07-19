@@ -86,7 +86,7 @@
   <div id="steps">
     <section class="step" data-count="27" data-hl="" data-eyebrow="1950"
       data-body="FIDE creates the Grandmaster title, awarding it to 27 players at once."></section>
-    <section class="step" data-count="27" data-hl="ru" data-eyebrow="1950"
+    <section class="step" data-count="27" data-hl="ussr" data-eyebrow="1950"
       data-body="Eleven of the 27 are already Soviet. One country dominates before the rivalry even has a name."></section>
     <section class="step" data-count="49" data-hl="ar" data-eyebrow="1950–1955"
       data-body="Miguel Najdorf is stranded in Argentina in 1939. His family dies in the Holocaust; he stays. By 1955, Argentina has its first homegrown grandmaster."></section>
@@ -202,7 +202,7 @@
     };
   }
 
-  fetch('data.csv').then(r => r.text()).then(text => {
+  fetch('data.csv', { cache: 'no-store' }).then(r => r.text()).then(text => {
     const GM = parseCSV(text);
     init(GM);
   });
@@ -241,7 +241,11 @@
       const back = document.createElement('div');
       back.style.position='absolute'; back.style.inset='0'; back.style.borderRadius='50%';
       back.style.backfaceVisibility='hidden'; back.style.transform='rotateY(180deg)';
-      if (gm.flag) {
+      if (gm.flag === 'ussr') {
+        back.style.backgroundImage='url(ussr.svg)'; // dissolved 1991 — not on flagcdn, so bundled locally
+        back.style.backgroundSize='cover';
+        back.style.backgroundPosition='17% 25%'; // the emblem sits in the canton, not the center — cover+center would crop it out entirely
+      } else if (gm.flag) {
         back.style.backgroundImage=`url(https://flagcdn.com/${gm.flag}.svg)`; // vector, not a fixed-width raster — stays sharp at any circle size
         back.style.backgroundSize='cover'; back.style.backgroundPosition='center';
       } else {
@@ -340,6 +344,9 @@
 
       // every step change lands on a fully grey grid first, THEN highlights the new
       // group — same rhythm as the text: year updates first, body text follows after.
+      // Each beat gets real dwell time so the sequence reads as deliberate, not rushed:
+      // grey settles (~700ms, matching the flip's own animation length) before the year
+      // changes, then a further pause before the new group highlights and text arrives.
       highlight = '';
       capStep.style.opacity = '0'; capYear.style.opacity = '0'; capBody.style.opacity = '0';
       render(newCount);
@@ -348,14 +355,14 @@
         capStep.textContent = `${String(idx + 1).padStart(2, '0')} / ${String(stepEls.length).padStart(2, '0')}`;
         capYear.textContent = s.dataset.eyebrow;
         capStep.style.opacity = '1'; capYear.style.opacity = '1';
-      }, 180);
+      }, 650);
 
       highlightTimer = setTimeout(() => {
         highlight = newHighlight;
         capBody.textContent = s.dataset.body;
         render(newCount);
         capBody.style.opacity = '1';
-      }, 620);
+      }, 1450);
     }
 
     // position:sticky always takes about one box-height of scroll to release, and during

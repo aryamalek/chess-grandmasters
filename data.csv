@@ -1,26 +1,26 @@
 name,sex,title_year,federation,flag
 "Bernstein, Ossip",M,1950,France,fr
-"Boleslavsky, Isaac",M,1950,Soviet Union,ru
-"Bondarevsky, Igor",M,1950,Soviet Union,ru
-"Botvinnik, Mikhail",M,1950,Soviet Union,ru
-"Bronstein, David",M,1950,Soviet Union,ru
+"Boleslavsky, Isaac",M,1950,Soviet Union,ussr
+"Bondarevsky, Igor",M,1950,Soviet Union,ussr
+"Botvinnik, Mikhail",M,1950,Soviet Union,ussr
+"Bronstein, David",M,1950,Soviet Union,ussr
 "Duras, Oldřich",M,1950,Czechoslovakia,cz
 "Euwe, Max",M,1950,Netherlands,nl
 "Fine, Reuben",M,1950,United States,us
-"Flohr, Salo",M,1950,Soviet Union,ru
+"Flohr, Salo",M,1950,Soviet Union,ussr
 "Grünfeld, Ernst",M,1950,Austria,at
-"Keres, Paul",M,1950,Soviet Union,ru
+"Keres, Paul",M,1950,Soviet Union,ussr
 "Kostić, Boris",M,1950,Yugoslavia,rs
-"Kotov, Alexander",M,1950,Soviet Union,ru
-"Levenfish, Grigory",M,1950,Soviet Union,ru
-"Lilienthal, Andor",M,1950,Soviet Union,ru
+"Kotov, Alexander",M,1950,Soviet Union,ussr
+"Levenfish, Grigory",M,1950,Soviet Union,ussr
+"Lilienthal, Andor",M,1950,Soviet Union,ussr
 "Maróczy, Géza",M,1950,Hungary,hu
 "Mieses, Jacques",M,1950,England,gb-eng
 "Najdorf, Miguel",M,1950,Argentina,ar
-"Ragozin, Viacheslav",M,1950,Soviet Union,ru
+"Ragozin, Viacheslav",M,1950,Soviet Union,ussr
 "Reshevsky, Samuel",M,1950,United States,us
 "Rubinstein, Akiba",M,1950,Poland,pl
-"Smyslov, Vasily",M,1950,Soviet Union,ru
+"Smyslov, Vasily",M,1950,Soviet Union,ussr
 "Ståhlberg, Gideon",M,1950,Sweden,se
 "Szabó, László",M,1950,Hungary,hu
 "Sämisch, Friedrich",M,1950,West Germany,de
@@ -28,15 +28,15 @@ name,sex,title_year,federation,flag
 "Vidmar, Milan",M,1950,Yugoslavia,rs
 "Bogoljubow, Efim",M,1951,West Germany,de
 "Gligorić, Svetozar",M,1951,Yugoslavia,rs
-"Averbakh, Yuri L.",M,1952,Soviet Union,ru
+"Averbakh, Yuri L.",M,1952,Soviet Union,ussr
 "Eliskases, Erich",M,1952,Argentina,ar
 "Geller, Efim",M,1952,Russia,ru
-"Petrosian, Tigran",M,1952,Soviet Union,ru
+"Petrosian, Tigran",M,1952,Soviet Union,ussr
 "Pilnik, Herman",M,1952,Argentina,ar
-"Taimanov, Mark",M,1952,Soviet Union,ru
+"Taimanov, Mark",M,1952,Soviet Union,ussr
 "Pirc, Vasja",M,1953,Yugoslavia,rs
 "Rossolimo, Nicolas",M,1953,United States,us
-"Tolush, Alexander",M,1953,Soviet Union,ru
+"Tolush, Alexander",M,1953,Soviet Union,ussr
 "Trifunović, Petar",M,1953,Yugoslavia,rs
 "Barcza, Gedeon",M,1954,Hungary,hu
 "Kashdan, Isaac",M,1954,United States,us
@@ -48,12 +48,12 @@ name,sex,title_year,federation,flag
 "Matanović, Aleksandar",M,1955,Yugoslavia,rs
 "Panno, Óscar",M,1955,Argentina,ar
 "Spassky, Boris V.",M,1955,Russia,ru
-"Korchnoi, Viktor",M,1956,Soviet Union,ru
+"Korchnoi, Viktor",M,1956,Soviet Union,ussr
 "Larsen, Bent",M,1956,Denmark,dk
 "O'Kelly de Galway, Albéric",M,1956,Belgium,be
 "Bisguier, Arthur",M,1957,United States,us
 "Evans, Larry",M,1957,United States,us
-"Tal, Mikhail",M,1957,Soviet Union,ru
+"Tal, Mikhail",M,1957,Soviet Union,ussr
 "Benko, Pal",M,1958,United States,us
 "Fischer, Robert James",M,1958,United States,us
 "Ólafsson, Friðrik",M,1958,Iceland,is
@@ -61,7 +61,7 @@ name,sex,title_year,federation,flag
 "Schmid, Lothar",M,1959,West Germany,de
 "Uhlmann, Wolfgang",M,1959,East Germany,de
 "Guimard, Carlos",M,1960,Argentina,ar
-"Kholmov, Ratmir",M,1960,Soviet Union,ru
+"Kholmov, Ratmir",M,1960,Soviet Union,ussr
 "Lombardy, William",M,1960,United States,us
 "Rossetto, Héctor",M,1960,Argentina,ar
 "Bobotsov, Milko",M,1961,Bulgaria,bg
@@ -69,10 +69,10 @@ name,sex,title_year,federation,flag
 "Robatsch, Karl",M,1961,Austria,at
 "Vasiukov, Evgeni",M,1961,Russia,ru
 "Bilek, István",M,1962,Hungary,hu
-"Polugaevsky, Lev",M,1962,Soviet Union,ru
+"Polugaevsky, Lev",M,1962,Soviet Union,ussr
 "Pomar, Arturo",M,1962,Spain,es
-"Simagin, Vladimir",M,1962,Soviet Union,ru
-"Stein, Leonid",M,1962,Soviet Union,ru
+"Simagin, Vladimir",M,1962,Soviet Union,ussr
+"Stein, Leonid",M,1962,Soviet Union,ussr
 "Udovčić, Mijo",M,1962,Yugoslavia,rs
 "Parma, Bruno",M,1963,Yugoslavia,rs
 "Tringov, Georgi",M,1963,Bulgaria,bg
@@ -80,58 +80,58 @@ name,sex,title_year,federation,flag
 "Byrne, Robert",M,1964,United States,us
 "Damjanović, Mato",M,1964,Yugoslavia,rs
 "Darga, Klaus",M,1964,West Germany,de
-"Krogius, Nikolai V.",M,1964,Soviet Union,ru
+"Krogius, Nikolai V.",M,1964,Soviet Union,ussr
 "Lengyel, Levente",M,1964,Hungary,hu
 "Padevsky, Nikola",M,1964,Bulgaria,bg
 "Yanofsky, Daniel",M,1964,Canada,ca
 "Gheorghiu, Florin",M,1965,Romania,ro
 "Hort, Vlastimil",M,1965,Czechoslovakia,cz
 "Janošević, Dragoljub",M,1965,Yugoslavia,rs
-"Liberzon, Vladimir",M,1965,Soviet Union,ru
+"Liberzon, Vladimir",M,1965,Soviet Union,ussr
 "Matulović, Milan",M,1965,Yugoslavia,rs
 "Pietzsch, Wolfgang",M,1965,East Germany,de
-"Shamkovich, Leonid",M,1965,Soviet Union,ru
+"Shamkovich, Leonid",M,1965,Soviet Union,ussr
 "Suetin, Alexey",M,1965,Russia,ru
 "Čirić, Dragoljub",M,1965,Yugoslavia,rs
-"Furman, Semyon",M,1966,Soviet Union,ru
+"Furman, Semyon",M,1966,Soviet Union,ussr
 "Kavalek, Lubomir",M,1966,United States,us
 "Bárczay, László",M,1967,Hungary,hu
-"Gipslis, Aivars",M,1967,Soviet Union,ru
+"Gipslis, Aivars",M,1967,Soviet Union,ussr
 "Gufeld, Eduard",M,1967,Ukraine,ua
-"Zaitsev, Alexander",M,1967,Soviet Union,ru
-"Lein, Anatoly",M,1968,Soviet Union,ru
+"Zaitsev, Alexander",M,1967,Soviet Union,ussr
+"Lein, Anatoly",M,1968,Soviet Union,ussr
 "Browne, Walter",M,1970,Australia,au
-"Gurgenidze, Bukhuti",M,1970,Soviet Union,ru
-"Karpov, Anatoly",M,1970,Soviet Union,ru
+"Gurgenidze, Bukhuti",M,1970,Soviet Union,ussr
+"Karpov, Anatoly",M,1970,Soviet Union,ussr
 "Hübner, Robert",M,1971,West Germany,de
 "Ljubojević, Ljubomir",M,1971,Yugoslavia,rs
-"Vaganian, Rafael A.",M,1971,Soviet Union,ru
+"Vaganian, Rafael A.",M,1971,Soviet Union,ussr
 "Andersson, Ulf",M,1972,Sweden,se
 "Mecking, Henrique",M,1972,Brazil,br
 "Planinec, Albin",M,1972,Yugoslavia,rs
 "Radulov, Ivan",M,1972,Bulgaria,bg
 "Smejkal, Jan",M,1972,Czechoslovakia,cz
-"Tukmakov, Vladimir B.",M,1972,Soviet Union,ru
+"Tukmakov, Vladimir B.",M,1972,Soviet Union,ussr
 "Adorján, András",M,1973,Hungary,hu
-"Balashov, Yuri S.",M,1973,Soviet Union,ru
+"Balashov, Yuri S.",M,1973,Soviet Union,ussr
 "Csom, István",M,1973,Hungary,hu
 "Hecht, Hans-Joachim",M,1973,Germany,de
 "Kuzmin, Gennady",M,1973,Ukraine,ua
 "Quinteros, Miguel A.",M,1973,Argentina,ar
 "Ribli, Zoltán",M,1973,Hungary,hu
-"Savon, Vladimir",M,1973,Soviet Union,ru
+"Savon, Vladimir",M,1973,Soviet Union,ussr
 "Suttles, Duncan",M,1973,Canada,ca
 "Velimirović, Dragoljub",M,1973,Yugoslavia,rs
 "Díez del Corral, Jesús",M,1974,Spain,es
 "Forintos, Győző",M,1974,Hungary,hu
 "Jansa, Vlastimil",M,1974,Czechoslovakia,cz
 "Kurajica, Bojan",M,1974,Yugoslavia,rs
-"Lutikov, Anatoly",M,1974,Soviet Union,ru
+"Lutikov, Anatoly",M,1974,Soviet Union,ussr
 "Mariotti, Sergio",M,1974,Italy,it
 "Sax, Gyula",M,1974,Hungary,hu
 "Timman, Jan H.",M,1974,Netherlands,nl
 "Torre, Eugenio",M,1974,Philippines,ph
-"Beliavsky, Alexander G.",M,1975,Soviet Union,ru
+"Beliavsky, Alexander G.",M,1975,Soviet Union,ussr
 "García Martínez, Silvino",M,1975,Cuba,cu
 "Kirov, Nino",M,1975,Bulgaria,bg
 "Knaak, Rainer",M,1975,East Germany,de
@@ -140,59 +140,59 @@ name,sex,title_year,federation,flag
 "Ostojić, Predrag",M,1975,Yugoslavia,rs
 "Pfleger, Helmut",M,1975,West Germany,de
 "Sigurjónsson, Guðmundur",M,1975,Iceland,is
-"Tseshkovsky, Vitaly",M,1975,Soviet Union,ru
+"Tseshkovsky, Vitaly",M,1975,Soviet Union,ussr
 "Vukić, Milan",M,1975,Yugoslavia,rs
 "Westerinen, Heikki M. J.",M,1975,Finland,fi
 "Balinas, Rosendo Jr.",M,1976,Philippines,ph
 "Bukić, Enver",M,1976,Yugoslavia,rs
 "Faragó, Iván",M,1976,Hungary,hu
 "García González, Guillermo",M,1976,Cuba,cu
-"Gulko, Boris",M,1976,Soviet Union,ru
+"Gulko, Boris",M,1976,Soviet Union,ussr
 "Hulak, Krunoslav",M,1976,Yugoslavia,rs
 "Keene, Raymond D.",M,1976,England,gb-eng
 "Knežević, Milorad",M,1976,Yugoslavia,rs
 "Kovačević, Vlatko",M,1976,Yugoslavia,rs
 "Kraidman, Yair",M,1976,Israel,il
-"Makarichev, Sergey",M,1976,Soviet Union,ru
+"Makarichev, Sergey",M,1976,Soviet Union,ussr
 "Miles, Anthony J.",M,1976,England,gb-eng
 "Raičević, Vladimir",M,1976,Yugoslavia,rs
-"Razuvaev, Yuri",M,1976,Soviet Union,ru
-"Romanishin, Oleg M.",M,1976,Soviet Union,ru
+"Razuvaev, Yuri",M,1976,Soviet Union,ussr
+"Romanishin, Oleg M.",M,1976,Soviet Union,ussr
 "Schmidt, Włodzimierz",M,1976,Poland,pl
-"Sosonko, Gennadi",M,1976,Soviet Union,ru
+"Sosonko, Gennadi",M,1976,Soviet Union,ussr
 "Spassov, Liuben",M,1976,Bulgaria,bg
 "Tarjan, James",M,1976,United States,us
 "Vadász, László",M,1976,Hungary,hu
 "Vogt, Lothar",M,1976,Germany,de
 "Zaitsev, Igor A.",M,1976,Russia,ru
-"Alburt, Lev",M,1977,Soviet Union,ru
+"Alburt, Lev",M,1977,Soviet Union,ussr
 "Bolbochán, Julio",M,1977,Argentina,ar
 "Canal, Esteban",M,1977,Peru,pe
 "Christiansen, Larry",M,1977,United States,us
-"Dzindzichashvili, Roman",M,1977,Soviet Union,ru
+"Dzindzichashvili, Roman",M,1977,Soviet Union,ussr
 "Ermenkov, Evgenij",M,1977,Bulgaria,bg
-"Giorgadze, Tamaz",M,1977,Soviet Union,ru
-"Kochyev, Alexander",M,1977,Soviet Union,ru
+"Giorgadze, Tamaz",M,1977,Soviet Union,ussr
+"Kochyev, Alexander",M,1977,Soviet Union,ussr
 "Milić, Borislav",M,1977,Yugoslavia,rs
 "Rajković, Dušan",M,1977,Yugoslavia,rs
 "Rodríguez Céspedes, Amador",M,1977,Spain,es
 "Stean, Michael F.",M,1977,England,gb-eng
-"Sveshnikov, Evgeny",M,1977,Soviet Union,ru
+"Sveshnikov, Evgeny",M,1977,Soviet Union,ussr
 "Torre Repetto, Carlos",M,1977,Mexico,mx
-"Bagirov, Vladimir",M,1978,Soviet Union,ru
+"Bagirov, Vladimir",M,1978,Soviet Union,ussr
 "Bellón López, Juan Manuel",M,1978,Spain,es
 "Biyiasas, Peter",M,1978,Canada,ca
 "Ciocâltea, Victor",M,1978,Romania,ro
-"Dorfman, Iossif",M,1978,Soviet Union,ru
-"Gaprindashvili, Nona",F,1978,Soviet Union,ru
+"Dorfman, Iossif",M,1978,Soviet Union,ussr
+"Gaprindashvili, Nona",F,1978,Soviet Union,ussr
 "Hernández Onna, Román",M,1978,Cuba,cu
 "Ivanović, Božidar",M,1978,Yugoslavia,rs
 "Marjanović, Slavoljub",M,1978,Yugoslavia,rs
-"Mikhalchishin, Adrian",M,1978,Soviet Union,ru
+"Mikhalchishin, Adrian",M,1978,Soviet Union,ussr
 "Nemet, Ivan",M,1978,Yugoslavia,rs
 "Nikolić, Stanimir",M,1978,Yugoslavia,rs
 "Nunn, John D. M.",M,1978,England,gb-eng
-"Palatnik, Semon",M,1978,Soviet Union,ru
+"Palatnik, Semon",M,1978,Soviet Union,ussr
 "Plachetka, Ján",M,1978,Czechoslovakia,cz
 "Rodríguez Vargas, Orestes",M,1978,Peru,pe
 "Rogoff, Kenneth",M,1978,United States,us
@@ -206,23 +206,23 @@ name,sex,title_year,federation,flag
 "Flesch, János",M,1980,Hungary,hu
 "Ftáčnik, Ľubomír",M,1980,Slovakia,sk
 "Gruenfeld, Yehuda",M,1980,Israel,il
-"Jussupow, Artur",M,1980,Soviet Union,ru
-"Kasparov, Garry",M,1980,Soviet Union,ru
+"Jussupow, Artur",M,1980,Soviet Union,ussr
+"Kasparov, Garry",M,1980,Soviet Union,ussr
 "Kuligowski, Adam",M,1980,Poland,pl
-"Kupreichik, Viktor",M,1980,Soviet Union,ru
+"Kupreichik, Viktor",M,1980,Soviet Union,ussr
 "Mednis, Edmar",M,1980,United States,us
-"Panchenko, Alexander",M,1980,Soviet Union,ru
-"Rashkovsky, Nukhim N.",M,1980,Soviet Union,ru
+"Panchenko, Alexander",M,1980,Soviet Union,ussr
+"Rashkovsky, Nukhim N.",M,1980,Soviet Union,ussr
 "Ree, Hans",M,1980,Netherlands,nl
 "Seirawan, Yasser",M,1980,United States,us
 "Soltis, Andrew",M,1980,United States,us
 "Speelman, Jon S.",M,1980,England,gb-eng
-"Timoscenko, Gennadij",M,1980,Soviet Union,ru
+"Timoscenko, Gennadij",M,1980,Soviet Union,ussr
 "Denker, Arnold",M,1981,United States,us
 "Popović, Petar",M,1981,Yugoslavia,rs
 "Rantanen, Yrjö",M,1981,Finland,fi
 "Djurić, Stefan",M,1982,Yugoslavia,rs
-"Dolmatov, Sergey",M,1982,Soviet Union,ru
+"Dolmatov, Sergey",M,1982,Soviet Union,ussr
 "Henley, Ron",M,1982,United States,us
 "Inkiov, Ventzislav",M,1982,Bulgaria,bg
 "Karlsson, Lars",M,1982,Sweden,se
@@ -231,37 +231,37 @@ name,sex,title_year,federation,flag
 "Mestel, A. Jonathan",M,1982,England,gb-eng
 "Pintér, József",M,1982,Hungary,hu
 "Prins, Lodewijk",M,1982,Netherlands,nl
-"Psakhis, Lev",M,1982,Soviet Union,ru
+"Psakhis, Lev",M,1982,Soviet Union,ussr
 "Sanguineti, Raúl",M,1982,Argentina,ar
 "Van der Wiel, John T. H.",M,1982,Netherlands,nl
 "Velikov, Petar",M,1982,Bulgaria,bg
-"Alatortsev, Vladimir",M,1983,Soviet Union,ru
+"Alatortsev, Vladimir",M,1983,Soviet Union,ussr
 "Chandler, Murray G.",M,1983,New Zealand,nz
 "Espig, Lutz",M,1983,Germany,de
 "Gurevich, Dmitry",M,1983,United States,us
 "Klarić, Zlatko",M,1983,Yugoslavia,rs
-"Konstantinopolsky, Alexander",M,1983,Soviet Union,ru
+"Konstantinopolsky, Alexander",M,1983,Soviet Union,ussr
 "Lundin, Erik",M,1983,Sweden,se
 "Nikolić, Predrag",M,1983,Yugoslavia,rs
 "Abramović, Boško",M,1984,Yugoslavia,rs
-"Agzamov, Georgy",M,1984,Soviet Union,ru
+"Agzamov, Georgy",M,1984,Soviet Union,ussr
 "Böök, Eero",M,1984,Finland,fi
-"Chekhov, Valery A.",M,1984,Soviet Union,ru
-"Chiburdanidze, Maia",F,1984,Soviet Union,ru
-"Gavrikov, Viktor",M,1984,Soviet Union,ru
+"Chekhov, Valery A.",M,1984,Soviet Union,ussr
+"Chiburdanidze, Maia",F,1984,Soviet Union,ussr
+"Gavrikov, Viktor",M,1984,Soviet Union,ussr
 "Kudrin, Sergey",M,1984,United States,us
-"Lputian, Smbat G.",M,1984,Soviet Union,ru
+"Lputian, Smbat G.",M,1984,Soviet Union,ussr
 "Mokry, Karel",M,1984,Czechoslovakia,cz
 "Petrosian, Arshak B.",M,1984,Armenia,am
 "Puc, Stojan",M,1984,Yugoslavia,rs
 "Short, Nigel D.",M,1984,England,gb-eng
 "Simić, Radoslav",M,1984,Yugoslavia,rs
-"Sokolov, Andrei",M,1984,Soviet Union,ru
-"Zaichik, Gennadi",M,1984,Soviet Union,ru
+"Sokolov, Andrei",M,1984,Soviet Union,ussr
+"Zaichik, Gennadi",M,1984,Soviet Union,ussr
 "Zapata, Alonso",M,1984,Colombia,co
 "Agdestein, Simen",M,1985,Norway,no
 "Cebalo, Mišo",M,1985,Yugoslavia,rs
-"Chernin, Alexander",M,1985,Soviet Union,ru
+"Chernin, Alexander",M,1985,Soviet Union,ussr
 "De Firmian, Nick",M,1985,United States,us
 "García Palermo, Carlos Horacio",M,1985,Argentina,ar
 "Georgiev, Kiril",M,1985,Bulgaria,bg
@@ -272,7 +272,7 @@ name,sex,title_year,federation,flag
 "Plaskett, H. James",M,1985,England,gb-eng
 "Rogers, Ian",M,1985,Australia,au
 "Spraggett, Kevin",M,1985,Canada,ca
-"Vaisser, Anatoli",M,1985,Soviet Union,ru
+"Vaisser, Anatoli",M,1985,Soviet Union,ussr
 "Ólafsson, Helgi",M,1985,Iceland,is
 "Šajtar, Jaroslav",M,1985,Czechoslovakia,cz
 Ardiansyah,M,1986,Indonesia,id
@@ -282,50 +282,50 @@ Ardiansyah,M,1986,Indonesia,id
 "Cámpora, Daniel H.",M,1986,Argentina,ar
 "Dake, Arthur",M,1986,United States,us
 "Dlugy, Maxim",M,1986,United States,us
-"Eingorn, Vereslav S.",M,1986,Soviet Union,ru
+"Eingorn, Vereslav S.",M,1986,Soviet Union,ussr
 "Fedorowicz, John",M,1986,United States,us
 "Fernández Garcia, José Luís",M,1986,Spain,es
 "Ghițescu, Theodor",M,1986,Romania,ro
 "Granda Zúñiga, Julio E",M,1986,Peru,pe
 "Groszpeter, Attila",M,1986,Hungary,hu
-"Gurevich, Mikhail",M,1986,Soviet Union,ru
+"Gurevich, Mikhail",M,1986,Soviet Union,ussr
 "Gutman, Lev",M,1986,Israel,il
 "Lau, Ralf",M,1986,West Germany,de
-"Lerner, Konstantin",M,1986,Soviet Union,ru
+"Lerner, Konstantin",M,1986,Soviet Union,ussr
 "Lukács, Péter",M,1986,Hungary,hu
 "Morovic Fernández, Iván",M,1986,Chile,cl
 "Pétursson, Margeir",M,1986,Iceland,is
-"Salov, Valery",M,1986,Soviet Union,ru
+"Salov, Valery",M,1986,Soviet Union,ussr
 "Sunye Neto, Jaime",M,1986,Brazil,br
 "Wahyuwidayat, Utut Adianto",M,1986,Indonesia,id
 "Árnason, Jón L.",M,1986,Iceland,is
 "Barbero, Gerardo",M,1987,Argentina,ar
 "Cvitan, Ognjen",M,1987,Yugoslavia,rs
-"Ehlvest, Jaan",M,1987,Soviet Union,ru
+"Ehlvest, Jaan",M,1987,Soviet Union,ussr
 "Flear, Glenn C.",M,1987,England,gb-eng
-"Makogonov, Vladimir",M,1987,Soviet Union,ru
-"Malaniuk, Vladimir",M,1987,Soviet Union,ru
+"Makogonov, Vladimir",M,1987,Soviet Union,ussr
+"Malaniuk, Vladimir",M,1987,Soviet Union,ussr
 "Meduna, Eduard",M,1987,Czechoslovakia,cz
 "Mikėnas, Vladas",M,1987,Lithuania,lt
 "Murey, Jacob",M,1987,Israel,il
 "Murshed, Niaz",M,1987,Bangladesh,bd
 "Pigusov, Evgeny",M,1987,Russia,ru
 "Rivas Pastor, Manuel",M,1987,Spain,es
-"Smagin, Sergey",M,1987,Soviet Union,ru
+"Smagin, Sergey",M,1987,Soviet Union,ussr
 "Sokolov, Ivan",M,1987,Yugoslavia,rs
-"Zeitlein, Michael",M,1987,Soviet Union,ru
+"Zeitlein, Michael",M,1987,Soviet Union,ussr
 "Śliwa, Bogdan",M,1987,Poland,pl
 "Anand, Viswanathan",M,1988,India,in
-"Azmaiparashvili, Zurab",M,1988,Soviet Union,ru
+"Azmaiparashvili, Zurab",M,1988,Soviet Union,ussr
 "Dizdarević, Emir",M,1988,Yugoslavia,rs
-"Dokhoian, Yury",M,1988,Soviet Union,ru
+"Dokhoian, Yury",M,1988,Soviet Union,ussr
 "Georgiev, Krum",M,1988,Bulgaria,bg
 "Hellers, Ferdinand",M,1988,Sweden,se
 "Hickl, Jörg",M,1988,Germany,de
 "Hodgson, Julian M.",M,1988,England,gb-eng
 "Illescas Cordoba, Miguel",M,1988,Spain,es
-"Ivanchuk, Vasyl",M,1988,Soviet Union,ru
-"Kaidanov, Gregory",M,1988,Soviet Union,ru
+"Ivanchuk, Vasyl",M,1988,Soviet Union,ussr
+"Kaidanov, Gregory",M,1988,Soviet Union,ussr
 "Kindermann, Stefan",M,1988,West Germany,de
 "Klinger, Josef",M,1988,Austria,at
 "Koltanowski, George",M,1988,Belgium,be
@@ -334,42 +334,42 @@ Ardiansyah,M,1986,Indonesia,id
 "Milos, Gilberto",M,1988,Brazil,br
 "Rohde, Michael",M,1988,United States,us
 "Schüssler, Harry",M,1988,Sweden,se
-"Ubilava, Elizbar",M,1988,Soviet Union,ru
+"Ubilava, Elizbar",M,1988,Soviet Union,ussr
 "Vera González-Quevedo, Reynaldo",M,1988,Cuba,cu
 "Wilder, Michael",M,1988,United States,us
 "Adams, Michael",M,1989,England,gb-eng
-"Bareev, Evgeny",M,1989,Soviet Union,ru
+"Bareev, Evgeny",M,1989,Soviet Union,ussr
 "Damljanović, Branko",M,1989,Yugoslavia,rs
 "Dreev, Aleksey",M,1989,Russia,ru
-"Gelfand, Boris",M,1989,Soviet Union,ru
-"Goldin, Alexander",M,1989,Soviet Union,ru
+"Gelfand, Boris",M,1989,Soviet Union,ussr
+"Goldin, Alexander",M,1989,Soviet Union,ussr
 "Greenfeld, Alon",M,1989,Israel,il
 "King, Daniel J.",M,1989,England,gb-eng
 "Kouatly, Bachar",M,1989,France,fr
 "Kožul, Zdenko",M,1989,Yugoslavia,rs
-"Krasenkow, Michał",M,1989,Soviet Union,ru
+"Krasenkow, Michał",M,1989,Soviet Union,ussr
 "Mohr, Stefan",M,1989,Germany,de
 "Norwood, David R.",M,1989,England,gb-eng
 "Piket, Jeroen",M,1989,Netherlands,nl
 "Todorčević Antić, Miodrag",M,1989,Yugoslavia,rs
 "Van der Sterren, Paul",M,1989,Netherlands,nl
-"Vladimirov, Yevgeniy",M,1989,Soviet Union,ru
+"Vladimirov, Yevgeniy",M,1989,Soviet Union,ussr
 "Vyzmanavin, Alexey",M,1989,Russia,ru
 "Wahls, Matthias",M,1989,Germany,de
 "Arencibia Rodríguez, Walter",M,1990,Cuba,cu
 "Bischoff, Klaus",M,1990,West Germany,de
-"Dautov, Rustem",M,1990,Soviet Union,ru
+"Dautov, Rustem",M,1990,Soviet Union,ussr
 "Donchev, Dimitar I.",M,1990,Bulgaria,bg
 "Dvoirys, Semen I.",M,1990,Russia,ru
-"Epishin, Vladimir",M,1990,Soviet Union,ru
+"Epishin, Vladimir",M,1990,Soviet Union,ussr
 "Ernst, Thomas",M,1990,Sweden,se
 "Franco Ocampos, Zenón",M,1990,Spain,es
 "Fuderer, Andrija",M,1990,Yugoslavia,rs
 "Gallagher, Joseph G.",M,1990,Switzerland,ch
-"Glek, Igor",M,1990,Soviet Union,ru
+"Glek, Igor",M,1990,Soviet Union,ussr
 "Hansen, Lars Bo",M,1990,Denmark,dk
 "Horvath, Jozsef",M,1990,Hungary,hu
-"Janjghava, Lasha",M,1990,Soviet Union,ru
+"Janjghava, Lasha",M,1990,Soviet Union,ussr
 "Kamsky, Gata",M,1990,United States,us
 "Khalifman, Alexander",M,1990,Russia,ru
 "Kosten, Anthony C.",M,1990,England,gb-eng
@@ -379,14 +379,14 @@ Ardiansyah,M,1986,Indonesia,id
 "Marić, Rudolf",M,1990,Yugoslavia,rs
 "Naumkin, Igor",M,1990,Russia,ru
 "Novikov, Igor",M,1990,Ukraine,ua
-"Oll, Lembit",M,1990,Soviet Union,ru
+"Oll, Lembit",M,1990,Soviet Union,ussr
 "Pähtz, Thomas",M,1990,Germany,de
 "Rechlis, Gad",M,1990,Israel,il
 "Renet, Olivier",M,1990,France,fr
-"Shirov, Alexei",M,1990,Soviet Union,ru
+"Shirov, Alexei",M,1990,Soviet Union,ussr
 "Shneider, Aleksandr",M,1990,Ukraine,ua
 "Skembris, Spyridon",M,1990,Greece,gr
-"Smirin, Ilia",M,1990,Soviet Union,ru
+"Smirin, Ilia",M,1990,Soviet Union,ussr
 "Spasov, Vasil",M,1990,Bulgaria,bg
 "Tischbierek, Raj",M,1990,Germany,de
 "Tolnai, Tibor",M,1990,Hungary,hu
@@ -397,7 +397,7 @@ Ardiansyah,M,1986,Indonesia,id
 "Yakovich, Yuri",M,1990,Russia,ru
 Ye Rongguang,M,1990,China,cn
 "Yrjölä, Jouni",M,1990,Finland,fi
-"Yudasin, Leonid",M,1990,Soviet Union,ru
+"Yudasin, Leonid",M,1990,Soviet Union,ussr
 "Akopian, Vladimir",M,1991,Armenia,am
 "Arkhipov, Sergey",M,1991,Russia,ru
 "Barua, Dibyendu",M,1991,India,in
@@ -783,7 +783,7 @@ Bu Xiangzhi,M,2000,China,cn
 "Chernikov, Oleg",M,2000,Russia,ru
 "Chernyshov, Konstantin",M,2000,Russia,ru
 "De Vreugt, Dennis",M,2000,Netherlands,nl
-"Dgebuadze, Alexandre",M,2000,Soviet Union,ru
+"Dgebuadze, Alexandre",M,2000,Soviet Union,ussr
 "Dražić, Siniša",M,2000,Yugoslavia (S&M),rs
 "Fressinet, Laurent",M,2000,France,fr
 "Georgiev, Vladimir",M,2000,Bulgaria,bg
