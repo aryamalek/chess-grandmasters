@@ -134,17 +134,42 @@
   const pauseProgress = document.getElementById('pauseProgress');
   const pauseProgressFill = document.getElementById('pauseProgressFill');
 
-  // Timeline: PAUSES are the fixed narrative beats (reusing the existing facts/copy).
-  // Scrolling between two pauses smoothly ticks the year (and the GM count with it)
-  // rather than jump-cutting — this is the first pause->continue cycle as a template;
-  // more pauses get appended to this array later.
+  // Timeline: the youngest-grandmaster-ever record, start to present. `person` highlights
+  // one specific circle by name (not a whole country); `growthNote` shows a caption during
+  // the scrub leading INTO a pause, for the two long stretches where the record just holds.
+  // Ages are sourced from Wikipedia's youngest-grandmasters record table, cross-checked by
+  // name against our own data — years use our dataset's title year (so the highlighted
+  // circle actually exists yet), which sometimes lags the record-breaking date by a year
+  // (FIDE's official conferral vs. the norm-completion date Wikipedia tracks).
   const PAUSES = [
-    { year: 1950, hl: 'ussr', eyebrow: '1950',
-      body: "Eleven of the 27 are already Soviet. One country dominates before the rivalry even has a name." },
-    { year: 1955, hl: 'ar', eyebrow: '1950–1955',
-      body: "Miguel Najdorf is stranded in Argentina in 1939. His family dies in the Holocaust; he stays. By 1955, Argentina has its first homegrown grandmaster." },
-    { year: 2026, hl: '', eyebrow: '1950–2026',
-      body: "From 27 to 2,143. Seven decades of grandmasters, one title at a time." },
+    { year: 1950, hl: '', eyebrow: '1950',
+      body: "FIDE creates the Grandmaster title. 27 players become grandmasters at once." },
+    { year: 1950, person: 'Bronstein, David', eyebrow: '1950',
+      body: "David Bronstein, 26 — the youngest of the founding 27." },
+    { year: 1952, person: 'Petrosian, Tigran', eyebrow: '1952',
+      body: "Tigran Petrosian, 23 — a new youngest grandmaster." },
+    { year: 1955, person: 'Spassky, Boris V.', eyebrow: '1955',
+      body: "Boris Spassky, 18 — a new youngest grandmaster." },
+    { year: 1958, person: 'Fischer, Robert James', eyebrow: '1958',
+      body: "Bobby Fischer, 15 — the youngest grandmaster in history." },
+    { year: 1992, person: 'Polgar, Judit', eyebrow: '1992',
+      growthNote: "34 years pass. No one gets closer to Fischer's record.",
+      body: "Judit Polgar, 15 — a new youngest grandmaster." },
+    { year: 1994, person: 'Leko, Peter', eyebrow: '1994',
+      body: "Péter Lékó, 14 — a new youngest grandmaster." },
+    { year: 1997, person: 'Bacrot, Étienne', eyebrow: '1997',
+      body: "Étienne Bacrot, 14 — a new youngest grandmaster." },
+    { year: 1998, person: 'Ponomariov, Ruslan', eyebrow: '1998',
+      body: "Ruslan Ponomariov, 14 — younger still." },
+    { year: 2000, person: 'Bu Xiangzhi', eyebrow: '2000',
+      body: "Bu Xiangzhi, 13 — the first teenager under 14." },
+    { year: 2003, person: 'Karjakin, Sergey', eyebrow: '2003',
+      body: "Sergey Karjakin, 12 — the youngest grandmaster in history." },
+    { year: 2021, person: 'Mishra, Abhimanyu', eyebrow: '2021',
+      growthNote: "18 years pass. Karjakin's record holds longer than any before it.",
+      body: "Abhimanyu Mishra, 12 — the youngest grandmaster ever." },
+    { year: 2026, hl: '', eyebrow: '2026',
+      body: "2,143 grandmasters. 92 countries. The record now stands at 12." },
   ];
   const PAUSE_VH = 2.0, YEAR_VH = 0.3, TAIL_VH = 1.0;
   // growth scroll is allocated PER YEAR (not as one fixed span for the whole zone), so
@@ -291,7 +316,8 @@
   function init(GM) {
     let grid = makeStableGrid();
     const els = [];
-    let highlight = '';
+    let highlight = ''; // flag-based group highlight (e.g. a whole country)
+    let highlightPerson = ''; // name-based single-circle highlight (one specific grandmaster)
     // true while scroll-scrubbing through a growth zone: positions should track the
     // scroll position 1:1 with no transition lag. False for a pause reveal, where the
     // eased transition is the point (a deliberate one-time animated move, not a scrub).
@@ -346,7 +372,7 @@
       node.appendChild(inner);
       stage.appendChild(node);
 
-      node.dataset.flag = gm.flag || ''; node.dataset.placed = '0';
+      node.dataset.flag = gm.flag || ''; node.dataset.name = gm.name; node.dataset.placed = '0';
       node._inner = inner;
       node.addEventListener('pointerenter', () => showTooltip(node, gm));
       node.addEventListener('pointerleave', hideTooltip);
@@ -356,7 +382,7 @@
 
     function place(node, cx, cy, r, delayMs, reshaped) {
       const scale = (r*2)/BASE;
-      const isHl = highlight && node.dataset.flag === highlight;
+      const isHl = (highlight && node.dataset.flag === highlight) || (highlightPerson && node.dataset.name === highlightPerson);
       node._inner.style.transitionDelay = '0ms';
       node._inner.style.transform = isHl ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
@@ -471,7 +497,8 @@
       if (isNewZone) {
         const count = countUpToYear(GM, p.year);
         scrubbing = false;
-        highlight = p.hl;
+        highlight = p.hl || '';
+        highlightPerson = p.person || '';
         render(count);
 
         capYear.textContent = p.eyebrow;
@@ -490,13 +517,22 @@
       const year = Math.round(fromP.year + (toP.year - fromP.year) * t);
       const count = countUpToYear(GM, year);
       scrubbing = true;
-      highlight = '';
-      capBody.style.opacity = '0';
+      highlight = ''; highlightPerson = '';
       capStat.style.opacity = '1';
       capYear.textContent = String(year);
       capTotal.textContent = count.toLocaleString();
       render(count);
       pauseProgress.style.opacity = '0';
+
+      // most growth stretches are silent (just the count ticking), but a few are long
+      // enough that the silence itself is the point — those get their own caption,
+      // named on the pause they're leading into.
+      if (toP.growthNote) {
+        capBody.textContent = toP.growthNote;
+        capBody.style.opacity = '1';
+      } else {
+        capBody.style.opacity = '0';
+      }
     }
 
     // position:sticky always takes about one box-height of scroll to release, and during
@@ -532,7 +568,7 @@
     // state instead of forcing grey.
     function renderInitialGrey() {
       scrubbing = false;
-      highlight = '';
+      highlight = ''; highlightPerson = '';
       capStat.style.opacity = '0'; capBody.style.opacity = '0';
       pauseProgress.style.opacity = '0'; pauseProgressFill.style.width = '0%';
       render(countUpToYear(GM, PAUSES[0].year));
@@ -554,12 +590,12 @@
       scrubbing = true;
       if (zone.type === 'pause') {
         const p = PAUSES[zone.index];
-        highlight = p.hl;
+        highlight = p.hl || ''; highlightPerson = p.person || '';
         render(countUpToYear(GM, p.year), true);
       } else {
         const fromP = PAUSES[zone.from], toP = PAUSES[zone.to];
         const year = Math.round(fromP.year + (toP.year - fromP.year) * zone.t);
-        highlight = '';
+        highlight = ''; highlightPerson = '';
         render(countUpToYear(GM, year), true);
       }
       updateEndFade();
