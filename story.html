@@ -568,7 +568,7 @@
       const fromDate = new Date(fromP.date), toDate = new Date(toP.date);
       const curDate = new Date(fromDate.getTime() + (toDate.getTime() - fromDate.getTime()) * t);
       const { years, months } = ymBetween(fromDate, curDate);
-      capBody.textContent = formatGap(years, months) + ' since ' + shortLabel(fromP);
+      capBody.textContent = formatGap(years, months) + ' since ' + shortLabel(fromP) + "'s record.";
       capBody.style.opacity = '1';
     }
 
