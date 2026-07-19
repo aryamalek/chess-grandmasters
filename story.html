@@ -63,6 +63,13 @@
     font-size: clamp(9px, 0.25vw + 8px, 12px); letter-spacing: 0.1em; text-transform: uppercase;
     color: rgba(255,255,255,0.4); margin-top: clamp(3px, 0.2vw + 2px, 6px);
   }
+  /* only shown while scrubbing through a growth zone — ticks up from 0 toward the full
+     gap since the last record, then hides the instant the next pause/highlight fires. */
+  #capGap {
+    font-size: clamp(11px, 0.3vw + 9px, 14px); color: rgba(212,175,106,0.85);
+    margin-top: clamp(8px, 0.6vw + 4px, 14px); transition: opacity 260ms ease; opacity: 0;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* below this width the side-by-side split doesn't leave body text enough room to
      wrap without overflowing the dock — stack text above the stat block instead,
@@ -111,6 +118,7 @@
         <div id="capYear"></div>
         <div id="capTotal"></div>
         <div id="capTotalLabel">Grandmasters</div>
+        <div id="capGap"></div>
       </div>
     </div>
   </div>
@@ -130,6 +138,7 @@
   const capYear = document.getElementById('capYear');
   const capTotal = document.getElementById('capTotal');
   const capBody = document.getElementById('capBody');
+  const capGap = document.getElementById('capGap');
 
   const pauseProgress = document.getElementById('pauseProgress');
   const pauseProgressFill = document.getElementById('pauseProgressFill');
@@ -137,39 +146,39 @@
   // Timeline: the youngest-grandmaster-ever record, start to present. `person` highlights
   // one specific circle by name (not a whole country); `growthNote` shows a caption during
   // the scrub leading INTO a pause, for the two long stretches where the record just holds.
-  // Ages are sourced from Wikipedia's youngest-grandmasters record table, cross-checked by
-  // name against our own data — years use our dataset's title year (so the highlighted
-  // circle actually exists yet), which sometimes lags the record-breaking date by a year
-  // (FIDE's official conferral vs. the norm-completion date Wikipedia tracks).
+  // `year` is our dataset's title year (so the highlighted circle actually exists yet) —
+  // it sometimes lags the real record date by a year (FIDE's official conferral vs. the
+  // norm-completion date). `date` is that real record date, day-level where sourced,
+  // used only to drive the ticking "time since last record" stat between pauses.
   const PAUSES = [
-    { year: 1950, hl: '', eyebrow: '1950',
+    { year: 1950, hl: '', eyebrow: '1950', date: '1950-07-27',
       body: "FIDE creates the Grandmaster title. 27 players become grandmasters at once." },
-    { year: 1950, person: 'Bronstein, David', eyebrow: '1950',
-      body: "David Bronstein, 26 — the youngest of the founding 27." },
-    { year: 1952, person: 'Petrosian, Tigran', eyebrow: '1952',
-      body: "Tigran Petrosian, 23 — a new youngest grandmaster." },
-    { year: 1955, person: 'Spassky, Boris V.', eyebrow: '1955',
-      body: "Boris Spassky, 18 — a new youngest grandmaster." },
-    { year: 1958, person: 'Fischer, Robert James', eyebrow: '1958',
-      body: "Bobby Fischer, 15 — the youngest grandmaster in history." },
-    { year: 1992, person: 'Polgar, Judit', eyebrow: '1992',
-      growthNote: "34 years pass. No one gets closer to Fischer's record.",
-      body: "Judit Polgar, 15 — a new youngest grandmaster." },
-    { year: 1994, person: 'Leko, Peter', eyebrow: '1994',
-      body: "Péter Lékó, 14 — a new youngest grandmaster." },
-    { year: 1997, person: 'Bacrot, Étienne', eyebrow: '1997',
-      body: "Étienne Bacrot, 14 — a new youngest grandmaster." },
-    { year: 1998, person: 'Ponomariov, Ruslan', eyebrow: '1998',
-      body: "Ruslan Ponomariov, 14 — younger still." },
-    { year: 2000, person: 'Bu Xiangzhi', eyebrow: '2000',
-      body: "Bu Xiangzhi, 13 — the first teenager under 14." },
-    { year: 2003, person: 'Karjakin, Sergey', eyebrow: '2003',
-      body: "Sergey Karjakin, 12 — the youngest grandmaster in history." },
-    { year: 2021, person: 'Mishra, Abhimanyu', eyebrow: '2021',
-      growthNote: "18 years pass. Karjakin's record holds longer than any before it.",
-      body: "Abhimanyu Mishra, 12 — the youngest grandmaster ever." },
-    { year: 2026, hl: '', eyebrow: '2026',
-      body: "2,143 grandmasters. 92 countries. The record now stands at 12." },
+    { year: 1950, person: 'Bronstein, David', eyebrow: '1950', date: '1950-07-27',
+      body: "David Bronstein, 26 years old — the youngest of the founding 27." },
+    { year: 1952, person: 'Petrosian, Tigran', eyebrow: '1952', date: '1952-10-21',
+      body: "Tigran Petrosian takes the record at 23 — 3 years younger, 2 years and 2 months later." },
+    { year: 1955, person: 'Spassky, Boris V.', eyebrow: '1955', date: '1955-09-21',
+      body: "Boris Spassky drops it to 18 — 5 years younger, 2 years and 11 months later." },
+    { year: 1958, person: 'Fischer, Robert James', eyebrow: '1958', date: '1958-09-10',
+      body: "Bobby Fischer, 15 years and 185 days — 3 years younger again, 2 years and 11 months later." },
+    { year: 1992, person: 'Polgar, Judit', eyebrow: '1992', date: '1991-12-21',
+      growthNote: "33 years and 3 months pass. No one gets closer to Fischer's record.",
+      body: "Judit Polgar, 15 years and 151 days — just over a month younger than Fischer, after 33 years and 3 months." },
+    { year: 1994, person: 'Leko, Peter', eyebrow: '1994', date: '1994-01-30',
+      body: "Péter Lékó, 14 years and 144 days — a year younger, 2 years and 1 month later." },
+    { year: 1997, person: 'Bacrot, Étienne', eyebrow: '1997', date: '1997-03-22',
+      body: "Étienne Bacrot, 14 years and 59 days — 3 months younger, 3 years and 1 month later." },
+    { year: 1998, person: 'Ponomariov, Ruslan', eyebrow: '1998', date: '1997-10-28',
+      body: "Ruslan Ponomariov, 14 years and 17 days — 6 weeks younger still, 7 months later." },
+    { year: 2000, person: 'Bu Xiangzhi', eyebrow: '2000', date: '1999-10-23',
+      body: "Bu Xiangzhi, 13 years and 317 days — the first teenager under 14, 2 months younger, 1 year and 11 months later." },
+    { year: 2003, person: 'Karjakin, Sergey', eyebrow: '2003', date: '2002-08-20',
+      body: "Sergey Karjakin, 12 years and 220 days — over a year younger, 2 years and 9 months later." },
+    { year: 2021, person: 'Mishra, Abhimanyu', eyebrow: '2021', date: '2021-06-30',
+      growthNote: "18 years and 10 months pass. Karjakin's record holds longer than any before it.",
+      body: "Abhimanyu Mishra, 12 years and 145 days — 2 months younger than Karjakin, after 18 years and 10 months." },
+    { year: 2026, hl: '', eyebrow: '2026', date: '2026-07-19',
+      body: "2,143 grandmasters. 92 countries. Mishra's record has now stood five years." },
   ];
   const PAUSE_VH = 2.0, YEAR_VH = 0.3, TAIL_VH = 1.0;
   // growth scroll is allocated PER YEAR (not as one fixed span for the whole zone), so
@@ -213,6 +222,24 @@
     while (lo < hi) { const mid = (lo+hi)>>1; if (+GM[mid].title_year <= year) lo = mid+1; else hi = mid; }
     return lo;
   }
+
+  // calendar-accurate (not a 30-day-month approximation) years+months between two dates —
+  // used for the "time since last record" stat, which ticks by interpolating calendar time
+  // across a growth zone the same way year/count already interpolate by PAUSES.year.
+  function ymBetween(d1, d2) {
+    let months = (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+    if (d2.getDate() < d1.getDate()) months -= 1;
+    months = Math.max(0, months);
+    return { years: Math.floor(months / 12), months: months % 12 };
+  }
+  function formatGap(years, months) {
+    if (years === 0 && months === 0) return 'days';
+    const parts = [];
+    if (years > 0) parts.push(years + (years === 1 ? ' year' : ' years'));
+    if (months > 0) parts.push(months + (months === 1 ? ' month' : ' months'));
+    return parts.join(', ');
+  }
+  function shortLabel(p) { return p.person ? p.person.split(',')[0] : 'the founding'; }
 
   const tooltip = document.getElementById('gmTooltip');
   const tooltipName = tooltip.querySelector('.name');
@@ -280,28 +307,33 @@
     });
   }
 
-  function makeStableGrid() {
-    let cols = 0, rows = 0;
+  // append-only grid: column count is fixed once, at construction, sized off the FINAL
+  // total (all of GM, not the current visible count) and the stage's aspect ratio — then
+  // growth only ever adds rows underneath. A fixed column count is what guarantees the
+  // flow reads strictly top-to-bottom: every new circle either continues the current row
+  // or starts a fresh row directly below, never appears in a newly-opened column above
+  // circles already placed further down. Early states (few circles) render as a short,
+  // centered first row rather than a mostly-empty full-width grid — cell size below is
+  // computed off the ACTUAL bounding box in use, not the grid's lifetime column capacity —
+  // so the canvas fills in and only reaches its full width/height by the end of the story.
+  function makeStableGrid(totalN, aspect) {
+    const cols = Math.max(1, Math.round(Math.sqrt(totalN * aspect)));
+    let rows = 0;
     const emptyQueue = [];
     const slots = [];
-    function grow(targetAspect) {
-      if (cols === 0) { cols = 1; rows = 1; emptyQueue.push({row:0,col:0}); return; }
-      const aspectIfCol = (cols + 1) / rows;
-      const aspectIfRow = cols / (rows + 1);
-      const addCol = Math.abs(Math.log(aspectIfCol/targetAspect)) <= Math.abs(Math.log(aspectIfRow/targetAspect));
-      if (addCol) { const nc = cols; cols += 1; for (let r=0;r<rows;r++) emptyQueue.push({row:r,col:nc}); }
-      else { const nr = rows; rows += 1; for (let c=0;c<cols;c++) emptyQueue.push({row:nr,col:c}); }
+    function addRow() {
+      const nr = rows; rows += 1;
+      for (let c = 0; c < cols; c++) emptyQueue.push({ row: nr, col: c });
     }
     return {
-      seed(n0, targetAspect) {
-        cols = Math.max(1, Math.round(Math.sqrt(n0 * targetAspect)));
+      seed(n0) {
         rows = Math.ceil(n0 / cols);
         for (let i = 0; i < n0; i++) slots[i] = { row: Math.floor(i/cols), col: i % cols };
         for (let i = n0; i < cols*rows; i++) emptyQueue.push({ row: Math.floor(i/cols), col: i % cols });
       },
-      slotFor(i, targetAspect) {
+      slotFor(i) {
         if (slots[i]) return slots[i];
-        while (emptyQueue.length === 0) grow(targetAspect);
+        while (emptyQueue.length === 0) addRow();
         const s = emptyQueue.shift(); slots[i] = s; return s;
       },
       dims() { return { cols, rows }; }
@@ -314,10 +346,20 @@
   });
 
   function init(GM) {
-    let grid = makeStableGrid();
+    function stageAspect() { return stage.clientWidth / stage.clientHeight; }
+    let grid = makeStableGrid(GM.length, stageAspect());
     const els = [];
     let highlight = ''; // flag-based group highlight (e.g. a whole country)
-    let highlightPerson = ''; // name-based single-circle highlight (one specific grandmaster)
+    let highlightPersons = new Set(); // every individual highlighted SO FAR stays highlighted, not just the current one
+    // a high-water mark, not the current position — once someone's been shown, they stay
+    // lit even if you scroll back up past their reveal. Only ever increases.
+    let maxIndexReached = -1;
+    // every .person up to and including this PAUSES index — record-holders stay lit as the story progresses
+    function personsUpToIndex(idx) {
+      const set = new Set();
+      for (let i = 0; i <= idx; i++) if (PAUSES[i].person) set.add(PAUSES[i].person);
+      return set;
+    }
     // true while scroll-scrubbing through a growth zone: positions should track the
     // scroll position 1:1 with no transition lag. False for a pause reveal, where the
     // eased transition is the point (a deliberate one-time animated move, not a scrub).
@@ -382,7 +424,7 @@
 
     function place(node, cx, cy, r, delayMs, reshaped) {
       const scale = (r*2)/BASE;
-      const isHl = (highlight && node.dataset.flag === highlight) || (highlightPerson && node.dataset.name === highlightPerson);
+      const isHl = (highlight && node.dataset.flag === highlight) || highlightPersons.has(node.dataset.name);
       node._inner.style.transitionDelay = '0ms';
       node._inner.style.transform = isHl ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
@@ -447,13 +489,12 @@
         node.style.opacity = '0';
         setTimeout(() => node.remove(), MOVE_MS);
       }
-      const aspect = W / H;
-      if (grid.dims().cols === 0 && n > 0) grid.seed(n, aspect);
+      if (grid.dims().rows === 0 && n > 0) grid.seed(n);
 
       const slotsForN = [];
       let maxRow = 0, maxCol = 0;
       for (let i = 0; i < n; i++) {
-        const s = grid.slotFor(i, aspect);
+        const s = grid.slotFor(i);
         slotsForN.push(s);
         if (s.row > maxRow) maxRow = s.row;
         if (s.col > maxCol) maxCol = s.col;
@@ -498,13 +539,15 @@
         const count = countUpToYear(GM, p.year);
         scrubbing = false;
         highlight = p.hl || '';
-        highlightPerson = p.person || '';
+        maxIndexReached = Math.max(maxIndexReached, index);
+        highlightPersons = personsUpToIndex(maxIndexReached);
         render(count);
 
         capYear.textContent = p.eyebrow;
         capTotal.textContent = count.toLocaleString();
         capBody.textContent = p.body;
         capStat.style.opacity = '1'; capBody.style.opacity = '1';
+        capGap.style.opacity = '0';
       }
 
       pauseProgress.style.opacity = '1';
@@ -513,16 +556,26 @@
 
     // continuous scroll-scrubbing between two pauses: year and running total track the
     // scroll position directly, no timers, no eased transition (the scroll IS the motion).
-    function updateGrowth(fromP, toP, t) {
+    function updateGrowth(fromP, toP, t, fromIndex) {
       const year = Math.round(fromP.year + (toP.year - fromP.year) * t);
       const count = countUpToYear(GM, year);
       scrubbing = true;
-      highlight = ''; highlightPerson = '';
+      highlight = '';
+      maxIndexReached = Math.max(maxIndexReached, fromIndex);
+      highlightPersons = personsUpToIndex(maxIndexReached); // already-revealed record-holders stay lit through the scrub too
       capStat.style.opacity = '1';
       capYear.textContent = String(year);
       capTotal.textContent = count.toLocaleString();
       render(count);
       pauseProgress.style.opacity = '0';
+
+      // ticks up from 0 toward the full gap as you scrub through this growth zone, by
+      // interpolating real calendar time (not just the CSV year) between the two records.
+      const fromDate = new Date(fromP.date), toDate = new Date(toP.date);
+      const curDate = new Date(fromDate.getTime() + (toDate.getTime() - fromDate.getTime()) * t);
+      const { years, months } = ymBetween(fromDate, curDate);
+      capGap.textContent = formatGap(years, months) + ' since ' + shortLabel(fromP);
+      capGap.style.opacity = '1';
 
       // most growth stretches are silent (just the count ticking), but a few are long
       // enough that the silence itself is the point — those get their own caption,
@@ -556,7 +609,7 @@
         updatePause(PAUSES[zone.index], zone.index, zone.progress, isNewZone);
       } else {
         currentKey = zone.key;
-        updateGrowth(PAUSES[zone.from], PAUSES[zone.to], zone.t);
+        updateGrowth(PAUSES[zone.from], PAUSES[zone.to], zone.t, zone.from);
       }
       updateEndFade();
       hideTooltip(); // avoid a stale tooltip if a highlight transition moves the circle out from under a stationary cursor
@@ -568,8 +621,8 @@
     // state instead of forcing grey.
     function renderInitialGrey() {
       scrubbing = false;
-      highlight = ''; highlightPerson = '';
-      capStat.style.opacity = '0'; capBody.style.opacity = '0';
+      highlight = ''; highlightPersons = new Set(); maxIndexReached = -1;
+      capStat.style.opacity = '0'; capBody.style.opacity = '0'; capGap.style.opacity = '0';
       pauseProgress.style.opacity = '0'; pauseProgressFill.style.width = '0%';
       render(countUpToYear(GM, PAUSES[0].year));
     }
@@ -582,20 +635,22 @@
       // (that's what keeps scroll-driven growth reflow-free) — but that means it's still
       // holding whatever shape fit the *old* container. A resize changes the container's
       // own aspect ratio, so pick a fresh shape for it rather than squeezing the old one in.
-      grid = makeStableGrid();
+      grid = makeStableGrid(GM.length, stageAspect());
       // re-render the CURRENT zone's state instantly (not a replayed reveal) — a resize
       // shouldn't restart the grey/highlight animation, just reshape the existing grid.
       const scrolled = Math.max(0, Math.min(trackHeightPx(), window.scrollY));
       const zone = computeZone(scrolled);
       scrubbing = true;
+      // uses the persistent high-water mark, not the current zone — a resize shouldn't
+      // un-highlight anyone already revealed, even if you're currently scrolled back above them.
       if (zone.type === 'pause') {
         const p = PAUSES[zone.index];
-        highlight = p.hl || ''; highlightPerson = p.person || '';
+        highlight = p.hl || ''; highlightPersons = personsUpToIndex(maxIndexReached);
         render(countUpToYear(GM, p.year), true);
       } else {
         const fromP = PAUSES[zone.from], toP = PAUSES[zone.to];
         const year = Math.round(fromP.year + (toP.year - fromP.year) * zone.t);
-        highlight = ''; highlightPerson = '';
+        highlight = ''; highlightPersons = personsUpToIndex(maxIndexReached);
         render(countUpToYear(GM, year), true);
       }
       updateEndFade();
