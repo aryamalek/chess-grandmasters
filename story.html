@@ -46,9 +46,7 @@
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
 
-  #steps { position: relative; margin-top: -100vh; pointer-events: none; } /* JS keeps this synced to #stickyStage's actual height */
-  .step { height: 100vh; }
-  .tail-spacer { height: 30vh; }
+  #steps { position: relative; margin-top: -100vh; pointer-events: none; } /* JS sets both this and its own height — it's the scroll track */
 
   .credit { max-width: 640px; margin: 0 auto; padding: 40px 24px 80px; font-size: 13px; color: rgba(255,255,255,0.45); }
   .credit a { color: rgba(255,255,255,0.65); }
@@ -83,17 +81,7 @@
     </div>
   </div>
 
-  <div id="steps">
-    <section class="step" data-count="27" data-hl="" data-eyebrow="1950"
-      data-body="FIDE creates the Grandmaster title, awarding it to 27 players at once."></section>
-    <section class="step" data-count="27" data-hl="ussr" data-eyebrow="1950"
-      data-body="Eleven of the 27 are already Soviet. One country dominates before the rivalry even has a name."></section>
-    <section class="step" data-count="49" data-hl="ar" data-eyebrow="1950–1955"
-      data-body="Miguel Najdorf is stranded in Argentina in 1939. His family dies in the Holocaust; he stays. By 1955, Argentina has its first homegrown grandmaster."></section>
-    <section class="step" data-count="58" data-hl="us" data-eyebrow="1958"
-      data-body="Bobby Fischer, 15, from Brooklyn, becomes the youngest grandmaster in history."></section>
-    <div class="tail-spacer"></div>
-  </div>
+  <div id="steps"></div>
 </div>
 
 <p class="credit">Data: FIDE grandmaster titles, 1950–present. Dissolved federations (Soviet Union, Czechoslovakia, Yugoslavia, East/West Germany) are shown under their principal present-day successor state.</p>
@@ -107,7 +95,55 @@
   const capStep = document.getElementById('capStep');
   const capYear = document.getElementById('capYear');
   const capBody = document.getElementById('capBody');
-  const stepEls = Array.from(document.querySelectorAll('.step'));
+
+  // Timeline: PAUSES are the fixed narrative beats (reusing the existing facts/copy).
+  // Scrolling between two pauses smoothly ticks the year (and the GM count with it)
+  // rather than jump-cutting — this is the first pause->continue cycle as a template;
+  // more pauses get appended to this array later.
+  const PAUSES = [
+    { year: 1950, hl: 'ussr', eyebrow: '1950',
+      body: "Eleven of the 27 are already Soviet. One country dominates before the rivalry even has a name." },
+    { year: 1955, hl: 'ar', eyebrow: '1950–1955',
+      body: "Miguel Najdorf is stranded in Argentina in 1939. His family dies in the Holocaust; he stays. By 1955, Argentina has its first homegrown grandmaster." },
+  ];
+  const PAUSE_VH = 1.0, YEAR_VH = 0.3, TAIL_VH = 0.4;
+  // growth scroll is allocated PER YEAR (not as one fixed span for the whole zone), so
+  // every individual year gets an equal, guaranteed slice of scroll — a 5-year gap and a
+  // 50-year gap both feel equally deliberate, rather than the longer one blurring past.
+  function growthPxFor(fromP, toP) {
+    return window.innerHeight * YEAR_VH * (toP.year - fromP.year);
+  }
+  function trackHeightPx() {
+    const h = window.innerHeight;
+    let total = h*PAUSE_VH*PAUSES.length + h*TAIL_VH;
+    for (let i = 0; i < PAUSES.length - 1; i++) total += growthPxFor(PAUSES[i], PAUSES[i+1]);
+    return total;
+  }
+  // which zone a given scroll-track position falls in: a pause (holds on one year) or
+  // a growth stretch (interpolating between the pause before and after it)
+  function computeZone(scrolled) {
+    const h = window.innerHeight;
+    const pausePx = h*PAUSE_VH;
+    let cursor = 0;
+    for (let i = 0; i < PAUSES.length; i++) {
+      if (scrolled < cursor + pausePx) return { type: 'pause', index: i, key: 'pause-'+i };
+      cursor += pausePx;
+      if (i < PAUSES.length - 1) {
+        const growthPx = growthPxFor(PAUSES[i], PAUSES[i+1]);
+        if (scrolled < cursor + growthPx) {
+          const t = Math.max(0, Math.min(1, (scrolled-cursor)/growthPx));
+          return { type: 'growth', from: i, to: i+1, t, key: 'growth-'+i };
+        }
+        cursor += growthPx;
+      }
+    }
+    return { type: 'pause', index: PAUSES.length-1, key: 'pause-'+(PAUSES.length-1) }; // tail: hold on the last pause
+  }
+  function countUpToYear(GM, year) {
+    let lo = 0, hi = GM.length;
+    while (lo < hi) { const mid = (lo+hi)>>1; if (+GM[mid].title_year <= year) lo = mid+1; else hi = mid; }
+    return lo;
+  }
 
   const tooltip = document.getElementById('gmTooltip');
   const tooltipName = tooltip.querySelector('.name');
@@ -136,6 +172,7 @@
   function layoutStage() {
     const h = window.innerHeight;
     stickyStage.style.height = h + 'px';
+    steps.style.height = trackHeightPx() + 'px';
     steps.style.marginTop = (-h) + 'px';
   }
   layoutStage();
@@ -211,6 +248,10 @@
     let grid = makeStableGrid();
     const els = [];
     let highlight = '';
+    // true while scroll-scrubbing through a growth zone: positions should track the
+    // scroll position 1:1 with no transition lag. False for a pause reveal, where the
+    // eased transition is the point (a deliberate one-time animated move, not a scrub).
+    let scrubbing = false;
 
     function ensureEl(i) {
       if (els[i]) return els[i];
@@ -272,11 +313,15 @@
       node._inner.style.transform = isHl ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
       if (node.dataset.placed === '0') {
-        node.style.transition = 'opacity 240ms ease-out';
+        node.style.transition = scrubbing ? 'none' : 'opacity 240ms ease-out';
         node.style.transitionDelay = '0ms';
         node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
-        requestAnimationFrame(() => { node.style.opacity = '1'; });
+        if (scrubbing) { node.style.opacity = '1'; } else { requestAnimationFrame(() => { node.style.opacity = '1'; }); }
         node.dataset.placed = '1';
+      } else if (scrubbing) {
+        node.style.transition = 'none';
+        node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+        node.style.opacity = '1';
       } else {
         node.style.transition = `transform ${MOVE_MS}ms ${EASE}, opacity 320ms ease-out`;
         node.style.transitionDelay = `${delayMs}ms`;
@@ -332,37 +377,44 @@
       }
     }
 
-    let activeStep = -1;
+    let currentKey = null;
     let yearTimer = null, highlightTimer = null;
-    function setActive(idx) {
-      if (idx === activeStep) return;
-      activeStep = idx;
-      const s = stepEls[idx];
-      const newCount = +s.dataset.count;
-      const newHighlight = s.dataset.hl;
-      clearTimeout(yearTimer); clearTimeout(highlightTimer);
 
-      // every step change lands on a fully grey grid first, THEN highlights the new
-      // group — same rhythm as the text: year updates first, body text follows after.
-      // Each beat gets real dwell time so the sequence reads as deliberate, not rushed:
-      // grey settles (~700ms, matching the flip's own animation length) before the year
-      // changes, then a further pause before the new group highlights and text arrives.
+    // entering a pause (for the first time, not just re-scrolling within it) plays the
+    // same grey -> year -> highlight+text reveal as before: grey settles first, then the
+    // year changes, then — after a further pause — the group highlights and text arrives.
+    function enterPause(p, index) {
+      clearTimeout(yearTimer); clearTimeout(highlightTimer);
+      const count = countUpToYear(GM, p.year);
+      scrubbing = false;
       highlight = '';
       capStep.style.opacity = '0'; capYear.style.opacity = '0'; capBody.style.opacity = '0';
-      render(newCount);
+      render(count);
 
       yearTimer = setTimeout(() => {
-        capStep.textContent = `${String(idx + 1).padStart(2, '0')} / ${String(stepEls.length).padStart(2, '0')}`;
-        capYear.textContent = s.dataset.eyebrow;
+        capStep.textContent = `${String(index + 1).padStart(2, '0')} / ${String(PAUSES.length).padStart(2, '0')}`;
+        capYear.textContent = p.eyebrow;
         capStep.style.opacity = '1'; capYear.style.opacity = '1';
       }, 650);
 
       highlightTimer = setTimeout(() => {
-        highlight = newHighlight;
-        capBody.textContent = s.dataset.body;
-        render(newCount);
+        highlight = p.hl;
+        capBody.textContent = p.body;
+        render(count);
         capBody.style.opacity = '1';
       }, 1450);
+    }
+
+    // continuous scroll-scrubbing between two pauses: year and count track the scroll
+    // position directly, no timers, no eased transition (the scroll gesture IS the motion).
+    function updateGrowth(fromP, toP, t) {
+      clearTimeout(yearTimer); clearTimeout(highlightTimer);
+      const year = Math.round(fromP.year + (toP.year - fromP.year) * t);
+      scrubbing = true;
+      highlight = '';
+      capStep.style.opacity = '0'; capBody.style.opacity = '0';
+      capYear.style.opacity = '1'; capYear.textContent = String(year);
+      render(countUpToYear(GM, year));
     }
 
     // position:sticky always takes about one box-height of scroll to release, and during
@@ -378,20 +430,19 @@
     }
 
     function onScroll() {
-      const stageRect = stickyStage.getBoundingClientRect();
-      const centerY = stageRect.top + stageRect.height * 0.55;
-      let idx = 0;
-      for (let i = 0; i < stepEls.length; i++) {
-        const r = stepEls[i].getBoundingClientRect();
-        if (r.top <= centerY) idx = i;
+      const scrolled = Math.max(0, Math.min(trackHeightPx(), window.scrollY));
+      const zone = computeZone(scrolled);
+      if (zone.type === 'pause') {
+        if (zone.key !== currentKey) { currentKey = zone.key; enterPause(PAUSES[zone.index], zone.index); }
+      } else {
+        currentKey = zone.key;
+        updateGrowth(PAUSES[zone.from], PAUSES[zone.to], zone.t);
       }
-      setActive(idx);
       updateEndFade();
       hideTooltip(); // avoid a stale tooltip if a highlight transition moves the circle out from under a stationary cursor
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    setActive(0);
     onScroll();
     window.addEventListener('resize', () => {
       layoutStage();
@@ -400,7 +451,21 @@
       // holding whatever shape fit the *old* container. A resize changes the container's
       // own aspect ratio, so pick a fresh shape for it rather than squeezing the old one in.
       grid = makeStableGrid();
-      render(+stepEls[activeStep].dataset.count);
+      // re-render the CURRENT zone's state instantly (not a replayed reveal) — a resize
+      // shouldn't restart the grey/highlight animation, just reshape the existing grid.
+      const scrolled = Math.max(0, Math.min(trackHeightPx(), window.scrollY));
+      const zone = computeZone(scrolled);
+      scrubbing = true;
+      if (zone.type === 'pause') {
+        const p = PAUSES[zone.index];
+        highlight = p.hl;
+        render(countUpToYear(GM, p.year));
+      } else {
+        const fromP = PAUSES[zone.from], toP = PAUSES[zone.to];
+        const year = Math.round(fromP.year + (toP.year - fromP.year) * zone.t);
+        highlight = '';
+        render(countUpToYear(GM, year));
+      }
       updateEndFade();
     });
   }
