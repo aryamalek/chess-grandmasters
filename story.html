@@ -307,37 +307,17 @@
     });
   }
 
-  // append-only grid: column count is fixed once, at construction, sized off the FINAL
-  // total (all of GM, not the current visible count) and the stage's aspect ratio — then
-  // growth only ever adds rows underneath. A fixed column count is what guarantees the
-  // flow reads strictly top-to-bottom: every new circle either continues the current row
-  // or starts a fresh row directly below, never appears in a newly-opened column above
-  // circles already placed further down. Early states (few circles) render as a short,
-  // centered first row rather than a mostly-empty full-width grid — cell size below is
-  // computed off the ACTUAL bounding box in use, not the grid's lifetime column capacity —
-  // so the canvas fills in and only reaches its full width/height by the end of the story.
-  function makeStableGrid(totalN, aspect) {
-    const cols = Math.max(1, Math.round(Math.sqrt(totalN * aspect)));
-    let rows = 0;
-    const emptyQueue = [];
-    const slots = [];
-    function addRow() {
-      const nr = rows; rows += 1;
-      for (let c = 0; c < cols; c++) emptyQueue.push({ row: nr, col: c });
-    }
-    return {
-      seed(n0) {
-        rows = Math.ceil(n0 / cols);
-        for (let i = 0; i < n0; i++) slots[i] = { row: Math.floor(i/cols), col: i % cols };
-        for (let i = n0; i < cols*rows; i++) emptyQueue.push({ row: Math.floor(i/cols), col: i % cols });
-      },
-      slotFor(i) {
-        if (slots[i]) return slots[i];
-        while (emptyQueue.length === 0) addRow();
-        const s = emptyQueue.shift(); slots[i] = s; return s;
-      },
-      dims() { return { cols, rows }; }
-    };
+  // column count is recomputed fresh from the CURRENT count and the stage's aspect ratio
+  // on every render — not fixed to the eventual final total — so the canvas is always
+  // close to fully used, from 27 circles up to 2,143, rather than starting as a sparse
+  // strip and only filling in by the end. This is stateless on purpose: index i always
+  // maps to row=floor(i/cols), col=i%cols for WHATEVER cols is right now, which is why
+  // the flow is always strictly top-to-bottom/left-to-right regardless of how cols has
+  // changed over time — there's no persisted slot assignment that can go stale or get
+  // backfilled out of order. The moments cols does change (as n grows) reflow every
+  // circle at once, smoothed by the "reshaped" transition below rather than snapping.
+  function colsFor(n, aspect) {
+    return Math.max(1, Math.round(Math.sqrt(n * aspect)));
   }
 
   fetch('data.csv', { cache: 'no-store' }).then(r => r.text()).then(text => {
@@ -346,8 +326,6 @@
   });
 
   function init(GM) {
-    function stageAspect() { return stage.clientWidth / stage.clientHeight; }
-    let grid = makeStableGrid(GM.length, stageAspect());
     const els = [];
     let highlight = ''; // flag-based group highlight (e.g. a whole country)
     let highlightPersons = new Set(); // every individual highlighted SO FAR stays highlighted, not just the current one
@@ -489,19 +467,8 @@
         node.style.opacity = '0';
         setTimeout(() => node.remove(), MOVE_MS);
       }
-      if (grid.dims().rows === 0 && n > 0) grid.seed(n);
-
-      const slotsForN = [];
-      let maxRow = 0, maxCol = 0;
-      for (let i = 0; i < n; i++) {
-        const s = grid.slotFor(i);
-        slotsForN.push(s);
-        if (s.row > maxRow) maxRow = s.row;
-        if (s.col > maxCol) maxCol = s.col;
-      }
-      // size cells off the bounding box actually used by the current n (not the grid's
-      // lifetime-max cols/rows) so scrolling back to a lower count rescales up correctly.
-      const cols = maxCol + 1, rows = maxRow + 1;
+      const cols = n > 0 ? colsFor(n, W / H) : 1;
+      const rows = Math.max(1, Math.ceil(n / cols));
       // reserve the top/bottom gaps from the height budget BEFORE sizing cells, not after —
       // sizing first and patching the position afterward can't guarantee both gaps at once
       // when the grid is height-bound (cell size leaves no slack to carve a gap out of).
@@ -522,9 +489,9 @@
       lastCols = cols; lastRows = rows;
 
       for (let i=0;i<n;i++) {
-        const slot = slotsForN[i];
-        const cx = offX+slot.col*cell+cell/2, cy = offY+slot.row*cell+cell/2;
-        const delay = rows > 1 ? Math.min(MAX_STAGGER_MS, (slot.row/Math.max(1,rows-1))*MAX_STAGGER_MS) : 0;
+        const row = Math.floor(i/cols), col = i % cols;
+        const cx = offX+col*cell+cell/2, cy = offY+row*cell+cell/2;
+        const delay = rows > 1 ? Math.min(MAX_STAGGER_MS, (row/Math.max(1,rows-1))*MAX_STAGGER_MS) : 0;
         place(els[i], cx, cy, r, delay, reshaped);
       }
     }
@@ -631,11 +598,6 @@
     if (window.scrollY === 0) { renderInitialGrey(); } else { onScroll(); }
     window.addEventListener('resize', () => {
       layoutStage();
-      // the stable grid's column/row shape is chosen once and then kept fixed on purpose
-      // (that's what keeps scroll-driven growth reflow-free) — but that means it's still
-      // holding whatever shape fit the *old* container. A resize changes the container's
-      // own aspect ratio, so pick a fresh shape for it rather than squeezing the old one in.
-      grid = makeStableGrid(GM.length, stageAspect());
       // re-render the CURRENT zone's state instantly (not a replayed reveal) — a resize
       // shouldn't restart the grey/highlight animation, just reshape the existing grid.
       const scrolled = Math.max(0, Math.min(trackHeightPx(), window.scrollY));
