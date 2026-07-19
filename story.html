@@ -144,15 +144,15 @@
     { year: 1950, person: 'Bronstein, David', eyebrow: '1950', date: '1950-07-27',
       body: "David Bronstein: 26 years." },
     { year: 1952, person: 'Petrosian, Tigran', eyebrow: '1952', date: '1952-10-21',
-      body: "Tigran Petrosian: 23 years." },
+      body: "Tigran Petrosian is the first under 26: 23 years." },
     { year: 1955, person: 'Spassky, Boris V.', eyebrow: '1955', date: '1955-09-21',
-      body: "Boris Spassky: 18 years." },
+      body: "Boris Spassky is the first under 23: 18 years." },
     { year: 1958, person: 'Fischer, Robert James', eyebrow: '1958', date: '1958-09-10',
-      body: "Bobby Fischer: 15 years and 185 days." },
+      body: "Bobby Fischer is the first under 18: 15 years and 185 days." },
     { year: 1992, person: 'Polgar, Judit', eyebrow: '1992', date: '1991-12-21',
       body: "The longest wait yet: 33 years. Then Judit Polgar finally beats it, at 15 years and 151 days." },
     { year: 1994, person: 'Leko, Peter', eyebrow: '1994', date: '1994-01-30',
-      body: "Péter Lékó is the first to reach 14: 14 years and 144 days." },
+      body: "Péter Lékó is the first under 15: 14 years and 144 days." },
     { year: 1997, person: 'Bacrot, Étienne', eyebrow: '1997', date: '1997-03-22',
       body: "Étienne Bacrot: 14 years and 59 days." },
     { year: 1998, person: 'Ponomariov, Ruslan', eyebrow: '1998', date: '1997-10-28',
@@ -166,7 +166,11 @@
     { year: 2026, hl: '', eyebrow: '2026', date: '2026-07-19',
       body: "2,143 grandmasters across 92 countries. Mishra's record has now stood for five years." },
   ];
-  const PAUSE_VH = 2.0, YEAR_VH = 0.3, TAIL_VH = 1.0;
+  // TAIL_VH used to be a full extra viewport height of scroll after the final pause with
+  // nothing happening (on top of the ~1 viewport position:sticky already needs to release) —
+  // scrolling well past the last caption before anything else occurred. Kept small: just
+  // enough buffer before the end-fade (RELEASE_FADE_PX) kicks in, no dead hold beforehand.
+  const PAUSE_VH = 2.0, YEAR_VH = 0.3, TAIL_VH = 0.3;
   // growth scroll is allocated PER YEAR (not as one fixed span for the whole zone), so
   // every individual year gets an equal, guaranteed slice of scroll — a 5-year gap and a
   // 50-year gap both feel equally deliberate, rather than the longer one blurring past.
@@ -415,8 +419,11 @@
     function place(node, cx, cy, r, delayMs, reshaped) {
       const scale = (r*2)/BASE;
       const isHl = (highlight && node.dataset.flag === highlight) || highlightPersons.has(node.dataset.name);
-      node._inner.style.transitionDelay = '0ms';
-      node._inner.style.transform = isHl ? 'rotateY(180deg)' : 'rotateY(0deg)';
+      if (node._lastHl !== isHl) {
+        node._inner.style.transitionDelay = '0ms';
+        node._inner.style.transform = isHl ? 'rotateY(180deg)' : 'rotateY(0deg)';
+        node._lastHl = isHl;
+      }
 
       if (node.dataset.placed === '0') {
         const finalTransform = `translate(${cx}px, ${cy}px) scale(${scale})`;
@@ -455,6 +462,12 @@
           node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
           node.style.opacity = '1';
         } else {
+          // the hot path: most circles' target position doesn't actually change from
+          // one scroll tick to the next (only the tail of the grid grows), so with up
+          // to ~2,000 circles re-rendered on every scroll event, re-writing an identical
+          // transform was the main source of scroll lag. Skip the DOM write entirely
+          // when nothing moved since the last frame.
+          if (node._lastCx === cx && node._lastCy === cy && node._lastScale === scale) return;
           node.style.transition = 'none';
           node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
           node.style.opacity = '1';
@@ -476,6 +489,7 @@
         node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
         node.style.opacity = '1';
       }
+      node._lastCx = cx; node._lastCy = cy; node._lastScale = scale;
     }
 
     function render(n, forceInstant) {
@@ -611,7 +625,16 @@
       render(pauseCounts[0]);
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+    // raw scroll events can fire far more often than the browser actually repaints —
+    // batching the real work into at most one call per animation frame (rather than
+    // running full render() synchronously on every single event) cut a large chunk of
+    // the lag on top of the position-memoization in place() above.
+    let scrollRAF = null;
+    function onScrollRaw() {
+      if (scrollRAF !== null) return;
+      scrollRAF = requestAnimationFrame(() => { scrollRAF = null; onScroll(); });
+    }
+    window.addEventListener('scroll', onScrollRaw, { passive: true });
     if (window.scrollY === 0) { renderInitialGrey(); } else { onScroll(); }
     window.addEventListener('resize', () => {
       layoutStage();
