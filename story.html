@@ -353,11 +353,13 @@
           node.style.transition = 'none';
           node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale * 0.55})`;
           node.style.opacity = '0';
-          requestAnimationFrame(() => {
-            node.style.transition = 'transform 240ms ease-out, opacity 240ms ease-out';
-            node.style.transform = finalTransform;
-            node.style.opacity = '1';
-          });
+          node.offsetHeight; // force the browser to commit the state above before transitioning away from it — a single rAF isn't reliable for this
+          node.style.transition = 'transform 240ms ease-out, opacity 240ms ease-out';
+          node.style.transform = finalTransform;
+          node.style.opacity = '1';
+          node.dataset.entering = '1';
+          clearTimeout(node._enterTimer);
+          node._enterTimer = setTimeout(() => { node.dataset.entering = '0'; }, 240);
         } else {
           node.style.transition = 'opacity 240ms ease-out';
           node.style.transitionDelay = '0ms';
@@ -366,9 +368,16 @@
         }
         node.dataset.placed = '1';
       } else if (scrubbing) {
-        node.style.transition = 'none';
-        node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
-        node.style.opacity = '1';
+        if (node.dataset.entering === '1') {
+          // still mid entrance-animation from a moment ago (the very next scroll tick
+          // can fire well before the 240ms fade finishes) — update its target position
+          // only, without resetting transition:none, or the fade never gets to play.
+          node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+        } else {
+          node.style.transition = 'none';
+          node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+          node.style.opacity = '1';
+        }
       } else {
         node.style.transition = `transform ${MOVE_MS}ms ${EASE}, opacity 320ms ease-out`;
         node.style.transitionDelay = `${delayMs}ms`;
