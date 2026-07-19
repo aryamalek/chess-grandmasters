@@ -416,6 +416,24 @@
       return node;
     }
 
+    // when the grid's column/row count changes, circles don't need to keep their old
+    // relative order or position — nothing in the story depends on WHICH grey circle
+    // sits where. So instead of sliding every circle to its new spot (which reads as
+    // big rows/columns of circles conveyor-belting left and right whenever the shape
+    // changes), snap straight to the new position while invisible and fade back in
+    // with a small randomized delay per circle — a soft shimmer resettling rather than
+    // a mechanical slide, and with no visible transform animation there's no direction
+    // for the eye to follow in the first place.
+    function reshapeMove(node, cx, cy, scale) {
+      node.style.transition = 'none';
+      node.style.opacity = '0';
+      node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+      node.offsetHeight; // commit the invisible/new-position state before animating back in
+      node.style.transition = 'opacity 320ms ease-out';
+      node.style.transitionDelay = Math.round(Math.random() * 140) + 'ms';
+      node.style.opacity = '1';
+    }
+
     function place(node, cx, cy, r, delayMs, reshaped) {
       const scale = (r*2)/BASE;
       const isHl = (highlight && node.dataset.flag === highlight) || highlightPersons.has(node.dataset.name);
@@ -455,12 +473,7 @@
           // only, without resetting transition:none, or the fade never gets to play.
           node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
         } else if (reshaped) {
-          // a row/col was just added — every circle resized at once, so smooth THIS
-          // specific move instead of snapping, then drop back to instant tracking.
-          node.style.transition = 'transform 220ms ease-out';
-          node.style.transitionDelay = '0ms';
-          node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
-          node.style.opacity = '1';
+          reshapeMove(node, cx, cy, scale);
         } else {
           // the hot path: most circles' target position doesn't actually change from
           // one scroll tick to the next (only the tail of the grid grows), so with up
@@ -476,13 +489,10 @@
         // the grid's column/row count happened to change on the exact same render as
         // this pause reveal (e.g. crossing from 31x15 to 32x14 right as a highlight
         // fires) — every existing circle shifts position at once as a side effect of
-        // geometry, not because they're being "revealed", so give them the same quick
-        // uniform move used for a mid-scrub reshape instead of the slow staggered sweep
+        // geometry, not because they're being "revealed", so give them the same soft
+        // reshape treatment as a mid-scrub reshape instead of the slow staggered sweep
         // below (which would otherwise read as the whole grid shuffling for no reason).
-        node.style.transition = 'transform 260ms ease-out, opacity 320ms ease-out';
-        node.style.transitionDelay = '0ms';
-        node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
-        node.style.opacity = '1';
+        reshapeMove(node, cx, cy, scale);
       } else {
         node.style.transition = `transform ${MOVE_MS}ms ${EASE}, opacity 320ms ease-out`;
         node.style.transitionDelay = `${delayMs}ms`;
