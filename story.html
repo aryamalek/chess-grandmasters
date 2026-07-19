@@ -329,19 +329,33 @@
     }
 
     let activeStep = -1;
+    let yearTimer = null, highlightTimer = null;
     function setActive(idx) {
       if (idx === activeStep) return;
       activeStep = idx;
       const s = stepEls[idx];
-      highlight = s.dataset.hl;
+      const newCount = +s.dataset.count;
+      const newHighlight = s.dataset.hl;
+      clearTimeout(yearTimer); clearTimeout(highlightTimer);
+
+      // every step change lands on a fully grey grid first, THEN highlights the new
+      // group — same rhythm as the text: year updates first, body text follows after.
+      highlight = '';
       capStep.style.opacity = '0'; capYear.style.opacity = '0'; capBody.style.opacity = '0';
-      setTimeout(() => {
+      render(newCount);
+
+      yearTimer = setTimeout(() => {
         capStep.textContent = `${String(idx + 1).padStart(2, '0')} / ${String(stepEls.length).padStart(2, '0')}`;
         capYear.textContent = s.dataset.eyebrow;
-        capBody.textContent = s.dataset.body;
-        capStep.style.opacity = '1'; capYear.style.opacity = '1'; capBody.style.opacity = '1';
+        capStep.style.opacity = '1'; capYear.style.opacity = '1';
       }, 180);
-      render(+s.dataset.count);
+
+      highlightTimer = setTimeout(() => {
+        highlight = newHighlight;
+        capBody.textContent = s.dataset.body;
+        render(newCount);
+        capBody.style.opacity = '1';
+      }, 620);
     }
 
     // position:sticky always takes about one box-height of scroll to release, and during
