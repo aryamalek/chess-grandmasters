@@ -24,18 +24,24 @@
      and ~2000px (wide desktop) — no line-length cap, so text uses the dock's full width
      and grows to match it, rather than sitting as a narrow column on a wide screen. */
   #captionDock {
-    flex: 0 0 auto; height: clamp(148px, 4.5vw + 130px, 220px);
+    flex: 0 0 auto; height: clamp(172px, 6vw + 150px, 260px);
     box-sizing: border-box; padding: clamp(18px, 0.5vw + 16px, 26px) clamp(22px, 2.6vw + 12px, 64px) clamp(26px, 0.5vw + 24px, 34px);
-    display: flex; flex-direction: column; justify-content: flex-end;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
     background: #0a0c12; border-top: 1px solid rgba(255,255,255,0.06);
+    text-align: center;
   }
-  #capEyebrow {
-    font-size: clamp(10px, 0.43vw + 8.3px, 17px); letter-spacing: 0.08em; text-transform: uppercase; color: #d4af6a;
-    margin-bottom: clamp(7px, 0.5vw + 5.5px, 10px); transition: opacity 260ms ease;
+  #capStep {
+    font-size: clamp(10px, 0.3vw + 9px, 13px); letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); margin-bottom: clamp(6px, 0.3vw + 5px, 9px); transition: opacity 260ms ease;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  #capYear {
+    font-size: clamp(28px, 1.74vw + 21.2px, 56px); font-weight: 700; letter-spacing: 0.01em; color: #d4af6a;
+    line-height: 1.1; margin-bottom: clamp(8px, 0.6vw + 6px, 14px); transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
   #capBody {
-    font-size: clamp(15px, 0.81vw + 11.85px, 28px); line-height: 1.5; color: rgba(255,255,255,0.92);
+    font-size: clamp(17px, 0.68vw + 14.3px, 28px); line-height: 1.45; color: rgba(255,255,255,0.92); width: 100%;
     transition: opacity 260ms ease;
     -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   }
@@ -71,20 +77,21 @@
   <div id="stickyStage">
     <div id="stage"></div>
     <div id="captionDock">
-      <div id="capEyebrow"></div>
+      <div id="capStep"></div>
+      <div id="capYear"></div>
       <div id="capBody"></div>
     </div>
   </div>
 
   <div id="steps">
     <section class="step" data-count="27" data-hl="" data-eyebrow="1950"
-      data-body="FIDE creates the Grandmaster title and grandfathers in 27 players at once — a chess world reordering itself after WWII gets its first formal ranking."></section>
+      data-body="FIDE creates the Grandmaster title, awarding it to 27 players at once."></section>
     <section class="step" data-count="27" data-hl="ru" data-eyebrow="1950"
-      data-body="Eleven of the twenty-seven are already Soviet. Before the Cold War chess rivalry even has a name, one country already dominates by sheer volume."></section>
+      data-body="Eleven of the 27 are already Soviet. One country dominates before the rivalry even has a name."></section>
     <section class="step" data-count="49" data-hl="ar" data-eyebrow="1950–1955"
-      data-body="Miguel Najdorf — stranded in Buenos Aires by the 1939 Olympiad while his family perished in the Holocaust — stays. By 1955, Argentina has its own homegrown grandmaster: Óscar Panno."></section>
+      data-body="Miguel Najdorf is stranded in Argentina in 1939. His family dies in the Holocaust; he stays. By 1955, Argentina has its first homegrown grandmaster."></section>
     <section class="step" data-count="58" data-hl="us" data-eyebrow="1958"
-      data-body="A 15-year-old from Brooklyn, Bobby Fischer, becomes the youngest grandmaster in history."></section>
+      data-body="Bobby Fischer, 15, from Brooklyn, becomes the youngest grandmaster in history."></section>
     <div class="tail-spacer"></div>
   </div>
 </div>
@@ -97,7 +104,8 @@
   const stickyStage = document.getElementById('stickyStage');
   const steps = document.getElementById('steps');
   const stage = document.getElementById('stage');
-  const capEyebrow = document.getElementById('capEyebrow');
+  const capStep = document.getElementById('capStep');
+  const capYear = document.getElementById('capYear');
   const capBody = document.getElementById('capBody');
   const stepEls = Array.from(document.querySelectorAll('.step'));
 
@@ -301,9 +309,12 @@
       const cols = maxCol + 1, rows = maxRow + 1;
       const cell = Math.min(W/cols, H/rows);
       const r = cell * 0.44;
-      // bottom-anchor the grid, then nudge down by the cell/circle padding difference so the
-      // circle edge itself (not the invisible cell boundary) sits flush against the caption zone.
-      const offX = (W-cols*cell)/2, offY = H-rows*cell+(cell/2-r);
+      // bottom-anchor the grid, nudge down by the cell/circle padding difference so the
+      // circle edge (not the invisible cell boundary) is what the gap below is measured
+      // from, then back off a bit of breathing room above the caption dock — but never
+      // less than topInset from the very top edge either, so both ends get some bleed.
+      const bottomGap = cell * 0.18, topInset = cell * 0.18;
+      const offX = (W-cols*cell)/2, offY = Math.max(topInset-(cell/2-r), H-rows*cell+(cell/2-r)-bottomGap);
 
       for (let i=0;i<n;i++) {
         const slot = slotsForN[i];
@@ -319,11 +330,12 @@
       activeStep = idx;
       const s = stepEls[idx];
       highlight = s.dataset.hl;
-      capEyebrow.style.opacity = '0'; capBody.style.opacity = '0';
+      capStep.style.opacity = '0'; capYear.style.opacity = '0'; capBody.style.opacity = '0';
       setTimeout(() => {
-        capEyebrow.textContent = s.dataset.eyebrow;
+        capStep.textContent = `${String(idx + 1).padStart(2, '0')} / ${String(stepEls.length).padStart(2, '0')}`;
+        capYear.textContent = s.dataset.eyebrow;
         capBody.textContent = s.dataset.body;
-        capEyebrow.style.opacity = '1'; capBody.style.opacity = '1';
+        capStep.style.opacity = '1'; capYear.style.opacity = '1'; capBody.style.opacity = '1';
       }, 180);
       render(+s.dataset.count);
     }
