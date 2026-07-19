@@ -459,6 +459,17 @@
           node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
           node.style.opacity = '1';
         }
+      } else if (reshaped) {
+        // the grid's column/row count happened to change on the exact same render as
+        // this pause reveal (e.g. crossing from 31x15 to 32x14 right as a highlight
+        // fires) — every existing circle shifts position at once as a side effect of
+        // geometry, not because they're being "revealed", so give them the same quick
+        // uniform move used for a mid-scrub reshape instead of the slow staggered sweep
+        // below (which would otherwise read as the whole grid shuffling for no reason).
+        node.style.transition = 'transform 260ms ease-out, opacity 320ms ease-out';
+        node.style.transitionDelay = '0ms';
+        node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
+        node.style.opacity = '1';
       } else {
         node.style.transition = `transform ${MOVE_MS}ms ${EASE}, opacity 320ms ease-out`;
         node.style.transitionDelay = `${delayMs}ms`;
