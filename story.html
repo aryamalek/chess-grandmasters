@@ -418,19 +418,17 @@
 
     // when the grid's column/row count changes, circles don't need to keep their old
     // relative order or position — nothing in the story depends on WHICH grey circle
-    // sits where. So instead of sliding every circle to its new spot (which reads as
-    // big rows/columns of circles conveyor-belting left and right whenever the shape
-    // changes), snap straight to the new position while invisible and fade back in
-    // with a small randomized delay per circle — a soft shimmer resettling rather than
-    // a mechanical slide, and with no visible transform animation there's no direction
-    // for the eye to follow in the first place.
+    // sits where. A synchronized transform move for every circle at once reads as big
+    // rows/columns conveyor-belting left and right; fading everyone to invisible and
+    // back (an earlier attempt) fixed that but reshapes happen often enough that it
+    // reads as constant flashing instead. Circles stay visible and just glide to their
+    // new spot, but each gets a small randomized delay so they don't all move in
+    // lockstep — softens it into an organic resettle rather than a rigid block or a
+    // strobe, without ever dropping opacity.
     function reshapeMove(node, cx, cy, scale) {
-      node.style.transition = 'none';
-      node.style.opacity = '0';
+      node.style.transition = `transform 380ms ${EASE}`;
+      node.style.transitionDelay = Math.round(Math.random() * 160) + 'ms';
       node.style.transform = `translate(${cx}px, ${cy}px) scale(${scale})`;
-      node.offsetHeight; // commit the invisible/new-position state before animating back in
-      node.style.transition = 'opacity 320ms ease-out';
-      node.style.transitionDelay = Math.round(Math.random() * 140) + 'ms';
       node.style.opacity = '1';
     }
 
