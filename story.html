@@ -24,11 +24,20 @@
      and ~2000px (wide desktop) — no line-length cap, so text uses the dock's full width
      and grows to match it, rather than sitting as a narrow column on a wide screen. */
   #captionDock {
+    position: relative;
     flex: 0 0 auto; height: clamp(172px, 6vw + 150px, 260px);
     box-sizing: border-box; padding: clamp(18px, 0.5vw + 16px, 26px) clamp(22px, 2.6vw + 12px, 64px) clamp(26px, 0.5vw + 24px, 34px);
     display: flex; flex-direction: row; align-items: center; gap: clamp(24px, 3vw, 56px);
     background: #0a0c12; border-top: 1px solid rgba(255,255,255,0.06);
   }
+  /* fills left-to-right as you scroll through the current pause zone — how much further
+     until this beat's fully revealed. Hidden during growth zones (nothing to "get through"
+     there, it's continuous ticking, not a threshold-gated reveal). */
+  #pauseProgress {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: rgba(255,255,255,0.08); transition: opacity 300ms ease; opacity: 0;
+  }
+  #pauseProgressFill { height: 100%; width: 0%; background: #d4af6a; }
   /* left region: everything from the screen edge to the stat block's left edge — body
      text is centered WITHIN that region (not the whole dock), so it never sits under
      or competes with the year/total block on the right. */
@@ -97,6 +106,9 @@
   <div id="stickyStage">
     <div id="stage"></div>
     <div id="captionDock">
+      <div id="pauseProgress">
+        <div id="pauseProgressFill"></div>
+      </div>
       <div id="capTextArea">
         <div id="capStep"></div>
         <div id="capBody"></div>
@@ -126,6 +138,9 @@
   const capTotal = document.getElementById('capTotal');
   const capBody = document.getElementById('capBody');
 
+  const pauseProgress = document.getElementById('pauseProgress');
+  const pauseProgressFill = document.getElementById('pauseProgressFill');
+
   // Timeline: PAUSES are the fixed narrative beats (reusing the existing facts/copy).
   // Scrolling between two pauses smoothly ticks the year (and the GM count with it)
   // rather than jump-cutting — this is the first pause->continue cycle as a template;
@@ -138,7 +153,7 @@
     { year: 2026, hl: '', eyebrow: '1950–2026',
       body: "From 27 to 2,143. Seven decades of grandmasters, one title at a time." },
   ];
-  const PAUSE_VH = 1.0, YEAR_VH = 0.3, TAIL_VH = 1.0;
+  const PAUSE_VH = 2.0, YEAR_VH = 0.3, TAIL_VH = 1.0;
   // growth scroll is allocated PER YEAR (not as one fixed span for the whole zone), so
   // every individual year gets an equal, guaranteed slice of scroll — a 5-year gap and a
   // 50-year gap both feel equally deliberate, rather than the longer one blurring past.
@@ -455,39 +470,26 @@
     }
 
     let currentKey = null;
-    let pauseHighlightShown = false; // avoids re-rendering every scroll tick when nothing has actually changed
 
-    // a pause's grey -> year -> highlight+text reveal is driven directly by scroll
-    // position within the zone (not wall-clock timers) — scroll past a threshold and
-    // that beat appears immediately, at any scroll speed, with no dead space either
-    // before it triggers or after it's already fully revealed.
-    const YEAR_THRESHOLD = 0.22, HIGHLIGHT_THRESHOLD = 0.55;
+    // two states only: travelling (growth) or highlighting (pause) — never a mix. The
+    // instant a pause starts, the highlight, the text, and the progress slider all
+    // appear together; the slider then just tracks how far through this beat you are.
     function updatePause(p, index, progress, isNewZone) {
-      const count = countUpToYear(GM, p.year);
-      const showYear = progress >= YEAR_THRESHOLD;
-      const showHighlight = progress >= HIGHLIGHT_THRESHOLD;
-
       if (isNewZone) {
+        const count = countUpToYear(GM, p.year);
         scrubbing = false;
-        highlight = showHighlight ? p.hl : '';
+        highlight = p.hl;
         render(count);
-        pauseHighlightShown = showHighlight;
-      } else if (showHighlight !== pauseHighlightShown) {
-        // crossed the highlight threshold (forward or backward) since the last tick
-        highlight = showHighlight ? p.hl : '';
-        render(count);
-        pauseHighlightShown = showHighlight;
-      }
 
-      capStep.style.opacity = showYear ? '1' : '0';
-      capStat.style.opacity = showYear ? '1' : '0';
-      if (showYear) {
         capStep.textContent = `${String(index + 1).padStart(2, '0')} / ${String(PAUSES.length).padStart(2, '0')}`;
         capYear.textContent = p.eyebrow;
         capTotal.textContent = count.toLocaleString();
+        capBody.textContent = p.body;
+        capStep.style.opacity = '1'; capStat.style.opacity = '1'; capBody.style.opacity = '1';
       }
-      capBody.style.opacity = showHighlight ? '1' : '0';
-      if (showHighlight) { capBody.textContent = p.body; }
+
+      pauseProgress.style.opacity = '1';
+      pauseProgressFill.style.width = (progress * 100) + '%';
     }
 
     // continuous scroll-scrubbing between two pauses: year and running total track the
@@ -502,6 +504,7 @@
       capYear.textContent = String(year);
       capTotal.textContent = count.toLocaleString();
       render(count);
+      pauseProgress.style.opacity = '0';
     }
 
     // position:sticky always takes about one box-height of scroll to release, and during
@@ -539,6 +542,7 @@
       scrubbing = false;
       highlight = '';
       capStep.style.opacity = '0'; capStat.style.opacity = '0'; capBody.style.opacity = '0';
+      pauseProgress.style.opacity = '0'; pauseProgressFill.style.width = '0%';
       render(countUpToYear(GM, PAUSES[0].year));
     }
 
